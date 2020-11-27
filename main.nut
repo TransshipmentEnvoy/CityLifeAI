@@ -92,7 +92,7 @@ function CityLife::Start()
             this.current_month = month;
         }
 
-        AILog.Info("Processing town index " + town_index);
+        //AILog.Info("Processing town index " + town_index);
         this.ManageTown(this.towns[town_index++])
         if (town_index >= this.towns.len())
         {
@@ -105,8 +105,6 @@ function CityLife::Start()
         //     AILog.Info("Starting Yearly Updates");
         //     this.current_year = year
         // }
-
-        this.Sleep(84);
     }
 
 }

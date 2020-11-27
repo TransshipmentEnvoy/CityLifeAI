@@ -33,15 +33,16 @@ function Town::BuildDepot()
 {
     local depot_placement_tiles = AITileList();
     local town_location = AITown.GetLocation(this.id);
+    AILog.Info(AITown.GetName(this.id) + " location: " + town_location)
 
     // The rectangle corners must be valid tiles
     local corner1 = town_location - AIMap.GetTileIndex(15, 15);
-    while(!AIMap.IsValidTile(corner1)) {
+    while(!AIMap.IsValidTile(corner1) || AIMap.DistanceManhattan(corner1, town_location) > 30) {
         corner1 += AIMap.GetTileIndex(1, 1);
     }
 
     local corner2 = town_location + AIMap.GetTileIndex(15, 15);
-    while(!AIMap.IsValidTile(corner2)) {
+    while(!AIMap.IsValidTile(corner2) || AIMap.DistanceManhattan(corner2, town_location) > 30) {
         corner2 -= AIMap.GetTileIndex(1, 1);
     }
 
@@ -67,6 +68,11 @@ function Town::BuildDepot()
             if (AIRoad.CanBuildConnectedRoadPartsHere(depot_tile, depot_tile + direction, depot_tile + direction + 1)) {
                 if (AIRoad.BuildRoad(depot_tile, depot_tile + direction) && AIRoad.BuildRoadDepot(depot_tile, depot_tile + direction))
                     return depot_tile;
+                else {
+                    AILog.Info(AIError.GetLastErrorString());
+                    return null;
+                }
+
             }
         }
 
