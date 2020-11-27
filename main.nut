@@ -8,8 +8,8 @@
  */
 
 require("version.nut");
-require("town.nut");
 require("vehicle.nut");
+require("town.nut");
 
 // Import ToyLib
 import("Library.AIToyLib", "AIToyLib", 1);
@@ -20,7 +20,6 @@ class CityLife extends AIController
     load_saved_data = null;
     current_save_version = null;
     current_date = null;
-	current_week = null;
 	current_month = null;
 	current_year = null;
     toy_lib = null;
@@ -31,7 +30,6 @@ class CityLife extends AIController
         this.load_saved_data = false;
         this.current_save_version = SELF_VERSION;
         this.current_date = 0;
-        this.current_week = 0;
         this.current_month = 0;
         this.current_year = 0;
     } // constructor
@@ -40,10 +38,16 @@ class CityLife extends AIController
 function CityLife::Init()
 {
     // Wait for game to start and give time to SCP
-    // this.Sleep(84); // TODO: Uncomment
+    this.Sleep(84); // TODO: Uncomment
 
     // Init ToyLib
     this.toy_lib = AIToyLib(null);
+
+    // Init time
+    local date = AIDate.GetCurrentDate();
+    this.current_date = date;
+    this.current_month = AIDate.GetMonth(date);
+    this.current_year = AIDate.GetYear(date);
 
     // Set company name
     if (!AICompany.SetName("CityLifeAI")) {
@@ -67,6 +71,7 @@ function CityLife::Init()
     // Create the towns list
 	AILog.Info("Create town list ... (can take a while on large maps)");
 	this.towns = this.CreateTownList();
+    this.UpdateTownVehicleCount();
 }
 
 function CityLife::Start()
@@ -90,6 +95,7 @@ function CityLife::Start()
         if (month - this.current_month != 0) {
             AILog.Info("Monthly update");
 
+            this.UpdateTownVehicleCount();
             this.AskForMoney();
 
             this.current_month = month;
@@ -120,7 +126,7 @@ function CityLife::AskForMoney()
     local bank_balance = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
     local loan_amount = AICompany.GetLoanAmount();
     local max_loan_amount = AICompany.GetMaxLoanAmount();
-    if (loan_amount > 0 && bank_balance >= max_loan_amount) {
+    if (loan_amount > 0 && bank_balance >= loan_amount) {
         AICompany.SetLoanAmount(0);
         bank_balance -= loan_amount;
     }
@@ -141,6 +147,13 @@ function CityLife::CreateTownList()
 	}
 
     return towns_array;
+}
+
+function CityLife::UpdateTownVehicleCount()
+{
+    foreach (town in this.towns) {
+        town.UpdateVehicleCount();
+	}
 }
 
 function CityLife::ManageTown(town)

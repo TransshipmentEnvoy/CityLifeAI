@@ -21,7 +21,7 @@ enum Category {
 
 enum Action {
     NONE,
-    RETURN,
+    LOST,
     SELL
 };
 
@@ -31,11 +31,33 @@ class Vehicle
     category = null;
     action = null;
 
-    constructor(id) {
+    constructor(id, category) {
         this.id = id;
-        this.category = 
+        this.category = category;
         this.action = Action.NONE;
     }
+}
+
+function Vehicle::Sell()
+{
+    if (this.action == Action.SELL)
+        return;
+
+    if (AIVehicle.SendVehicleToDepot(this.id))
+        this.action = Action.SELL;
+}
+
+function Vehicle::Update()
+{
+    if (AIVehicle.IsStoppedInDepot(this.id))
+    {
+        if (this.action == Action.SELL)
+            return AIVehicle.SellVehicle(this.id);
+        else
+            AIVehicle.StartStopVehicle(this.id);
+    }
+
+    return false;
 }
 
 function CreateEngineList() 
@@ -68,7 +90,7 @@ function CreateEngineList()
             engine_list.SetValue(engine, Category.FIRE);
         else if (weight == 1 && speed == 56 && power == 50 && effort == 2) 
             engine_list.SetValue(engine, Category.MAIL);
-        else if (weight == 1 && speed == 378 && power == 750 && effort == 5) 
+        else if (weight == 1 && speed == 376 && power == 750 && effort == 5) 
             engine_list.SetValue(engine, Category.SPORT);
         else if (weight == 12 && speed == 64 && power == 300 && effort == 34) 
             engine_list.SetValue(engine, Category.GARBAGE);

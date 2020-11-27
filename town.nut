@@ -9,14 +9,18 @@
 
 class Town
 {
-    id = null;                  // Town id
-    depot = null;               // Built depo
-    directions = null;         // A list with all directions.
+    id = null;                      // Town id
+    depot = null;                   // Built depo
+    vehicle_target_count = null;    // Number of vehicles to maintain
+    vehicle_list = null;            // List of owned vehicles
+    directions = null;              // A list with all directions
 
     constructor(town_id)
     {
         this.id = town_id;
         this.directions = [1, -1, AIMap.GetMapSizeX(), -AIMap.GetMapSizeX()];
+        this.vehicle_target_count = 0;
+        this.vehicle_list = [];
     }
 }
 
@@ -27,6 +31,116 @@ function Town::ManageTown()
         AILog.Info("Trying to build a depot in town " + AITown.GetName(this.id));
         this.depot = this.BuildDepot()
     }
+    else
+    {
+        local company_vehicles = AIVehicleList();
+        local max_vehicles = AIGameSettings.GetValue("max_roadveh");
+
+        local vehicle_count = this.GetVehicleCount(Category.CAR);
+        if (vehicle_count > this.vehicle_target_count)
+        {
+            local vehicle_list = this.GetVehiclesByCategory(Category.CAR);
+            vehicle_list = this.GetClosestVehiclesToDepot(vehicle_list, vehicle_count - this.vehicle_target_count);
+
+            foreach (vehicle in vehicle_list)
+            {
+                vehicle.Sell();
+            }
+        }
+        else if (vehicle_count < this.vehicle_target_count)
+        {
+            // Clone engine_list from global ::EngineList
+            local engine_list = AIList();
+            foreach (engine, category in ::EngineList)
+            {
+                engine_list.AddItem(engine, category);
+            }
+
+            engine_list.KeepValue(Category.CAR);
+            local engine = engine_list.Begin();
+            for (local i = 0; (i < this.vehicle_target_count - vehicle_count) && (company_vehicles.Count() + i < max_vehicles); ++i)
+            {
+                local vehicle = AIVehicle.BuildVehicle(this.depot, engine);
+                if (AIVehicle.IsValidVehicle(vehicle))
+                {
+                    this.vehicle_list.append(Vehicle(vehicle, Category.CAR));
+                }
+                else
+                {
+                    break;
+                }
+
+                engine = engine_list.Next();
+                if (engine_list.IsEnd())
+                    engine = engine_list.Begin();
+            }
+        }
+
+        this.UpdateVehicles();
+    }
+}
+
+function Town::UpdateVehicleCount()
+{
+    local population = AITown.GetPopulation(this.id);
+    population = population > 10000 ? 10000 : population;
+
+    this.vehicle_target_count = (population / 100).tointeger();
+}
+
+function Town::GetVehicleCount(category)
+{
+    local count = 0;
+
+    foreach (vehicle in this.vehicle_list)
+    {
+        if (vehicle.action != Action.SELL && vehicle.category == category)
+        {
+            ++count;
+        }
+    }
+
+    return count;
+}
+
+function Town::GetVehiclesByCategory(category)
+{
+    local vehicle_list = AIList();
+
+    foreach (vehicle in this.vehicle_list)
+    {
+        if (vehicle.action != Action.SELL && vehicle.category == category)
+        {
+            vehicle_list.AddItem(vehicle.id, 0);
+        }
+    }
+
+    return vehicle_list;
+}
+
+function Town::UpdateVehicles()
+{
+    for (local i = 0; i < this.vehicle_list.len(); ++i)
+    {
+        if (this.vehicle_list[i].Update())
+        {
+            this.vehicle_list.remove(i--);
+        }
+    }
+}
+
+function Town::GetClosestVehiclesToDepot(vehicle_list, count)
+{
+    foreach (vehicle in vehicle_list)
+    {
+        distance = AIMap.DistanceManhattan(this.depot, AIVehicle.GetLocation(vehicle));
+        vehicle_list.SetValue(vehicle, distance);
+    }
+
+    vehicle_list.Sort(AIList.SORT_BY_VALUE, true);
+    vehicle_list.KeepTop(count);
+
+    return vehicle_list;
 }
 
 function Town::BuildDepot()
@@ -35,7 +149,6 @@ function Town::BuildDepot()
 
     local depot_placement_tiles = AITileList();
     local town_location = AITown.GetLocation(this.id);
-    AILog.Info(AITown.GetName(this.id) + " location: " + town_location)
 
     // The rectangle corners must be valid tiles
     local corner1 = town_location - AIMap.GetTileIndex(15, 15);
@@ -95,7 +208,7 @@ function Town::BuildDepot()
 
         if(AIController.GetSetting("debug_signs"))
             AISign.BuildSign(depot_tile, "tile");
-            
+
         depot_tile = depot_placement_tiles.Next();
     }
 
