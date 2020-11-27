@@ -31,6 +31,8 @@ function Town::ManageTown()
 
 function Town::BuildDepot()
 {
+    AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
+
     local depot_placement_tiles = AITileList();
     local town_location = AITown.GetLocation(this.id);
     AILog.Info(AITown.GetName(this.id) + " location: " + town_location)
@@ -61,22 +63,39 @@ function Town::BuildDepot()
     while(!depot_placement_tiles.IsEnd()) {
         foreach (direction in directions)
         {
-            if (!AIRoad.IsRoadTile(depot_tile + direction)) {
+            if (!AIRoad.IsRoadTile(depot_tile + direction)) 
+            {
                 continue;
             }
 
-            if (AIRoad.CanBuildConnectedRoadPartsHere(depot_tile, depot_tile + direction, depot_tile + direction + 1)) {
-                if (AIRoad.BuildRoad(depot_tile, depot_tile + direction) && AIRoad.BuildRoadDepot(depot_tile, depot_tile + direction))
-                    return depot_tile;
-                else {
-                    AILog.Info(AIError.GetLastErrorString());
+            if (AIRoad.CanBuildConnectedRoadPartsHere(depot_tile, depot_tile + direction, depot_tile + direction + 1)) 
+            {
+                if (AIRoad.BuildRoad(depot_tile, depot_tile + direction) || AIError.GetLastError() == AIError.ERR_ALREADY_BUILT)
+                {
+                    if (AIRoad.BuildRoadDepot(depot_tile, depot_tile + direction))
+                        return depot_tile;
+                    else if (!(AIError.GetLastError() == AIError.ERR_FLAT_LAND_REQUIRED
+                            || AIError.GetLastError() == AIError.ERR_AREA_NOT_CLEAR)) 
+                    {
+                        AILog.Warning("Build depot :: Tile " + depot_tile + ": " + AIError.GetLastErrorString());
+                        return null;
+                    }
+                }
+                else if (!(AIError.GetLastError() == AIError.ERR_LAND_SLOPED_WRONG
+                        || AIError.GetLastError() == AIError.ERR_AREA_NOT_CLEAR
+                        || AIError.GetLastError() == AIError.ERR_ROAD_ONE_WAY_ROADS_CANNOT_HAVE_JUNCTIONS
+                        || AIError.GetLastError() == AIError.ERR_ROAD_WORKS_IN_PROGRESS
+                        || AIError.GetLastError() == AIError.ERR_VEHICLE_IN_THE_WAY))
+                {
+                    AILog.Warning("Build road :: Tile " + depot_tile + ": " + AIError.GetLastErrorString());
                     return null;
                 }
-
             }
         }
 
-        AISign.BuildSign(depot_tile, "tile");
+        if(AIController.GetSetting("debug_signs"))
+            AISign.BuildSign(depot_tile, "tile");
+            
         depot_tile = depot_placement_tiles.Next();
     }
 

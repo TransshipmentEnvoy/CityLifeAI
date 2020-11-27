@@ -38,6 +38,9 @@ class CityLife extends AIController
 
 function CityLife::Init()
 {
+    // Wait for game to start
+    this.Sleep(84);
+
     // Init ToyLib
     this.toy_lib = AIToyLib(null);
 
@@ -60,9 +63,6 @@ function CityLife::Init()
     // Create the towns list
 	AILog.Info("Create town list ... (can take a while on large maps)");
 	this.towns = this.CreateTownList();
-
-    // Init building parameters
-    AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 }
 
 function CityLife::Start()

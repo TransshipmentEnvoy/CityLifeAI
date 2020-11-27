@@ -23,7 +23,11 @@ class CityLife extends AIInfo {
     function CreateInstance()   { return "CityLife"; }
 
     function GetSettings() {
-
+        AddSetting({
+            name = "debug_signs", 
+            description = "Debug: Build signs", 
+            easy_value = 0, medium_value = 0, hard_value = 0, custom_value = 0, 
+            flags = CONFIG_BOOLEAN | CONFIG_INGAME  | CONFIG_DEVELOPER});
     } // GetSettings
 
 }
