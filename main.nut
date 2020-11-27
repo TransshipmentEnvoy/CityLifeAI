@@ -9,6 +9,7 @@
 
 require("version.nut");
 require("town.nut");
+require("vehicle.nut");
 
 // Import ToyLib
 import("Library.AIToyLib", "AIToyLib", 1);
@@ -38,8 +39,8 @@ class CityLife extends AIController
 
 function CityLife::Init()
 {
-    // Wait for game to start
-    this.Sleep(84);
+    // Wait for game to start and give time to SCP
+    // this.Sleep(84); // TODO: Uncomment
 
     // Init ToyLib
     this.toy_lib = AIToyLib(null);
@@ -59,6 +60,9 @@ function CityLife::Init()
     // Enable automatic renewal of vehicles
     AICompany.SetAutoRenewStatus(true);
     AICompany.SetAutoRenewMonths(1);
+
+    // Create Vehicles list
+    CreateEngineList();
 
     // Create the towns list
 	AILog.Info("Create town list ... (can take a while on large maps)");
@@ -83,13 +87,22 @@ function CityLife::Start()
 
         // Run the monthly functions
         local month = AIDate.GetMonth(date);
-        local diff_month = month - this.current_month;
-        if (diff_month != 0) {
+        if (month - this.current_month != 0) {
             AILog.Info("Monthly update");
 
             this.AskForMoney();
 
             this.current_month = month;
+        }
+
+        // Run the yearly functions
+        local year = AIDate.GetYear(date);
+        if (year - this.current_year != 0) {
+            AILog.Info("Yearly Update");
+
+            CreateEngineList();
+
+            this.current_year = year
         }
 
         //AILog.Info("Processing town index " + town_index);
@@ -98,13 +111,6 @@ function CityLife::Start()
         {
             town_index = 0;
         }
-
-        // // Run the yearly functions - Nothing to do for now, so we leave it out
-        // local year = AIDate.GetYear(date);
-        // if (year - this.current_year != 0) {
-        //     AILog.Info("Starting Yearly Updates");
-        //     this.current_year = year
-        // }
     }
 
 }
