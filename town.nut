@@ -39,8 +39,10 @@ function Town::ManageTown()
         local vehicle_count = this.GetVehicleCount(Category.CAR);
         if (vehicle_count > this.vehicle_target_count)
         {
+            AILog.Info("Selling " + (vehicle_count - this.vehicle_target_count) + " vehicles in " + AITown.GetName(this.id))
+
             local vehicle_list = this.GetVehiclesByCategory(Category.CAR);
-            vehicle_list = this.GetClosestVehiclesToDepot(vehicle_list, vehicle_count - this.vehicle_target_count);
+            vehicle_list = this.GetFurthestVehiclesToDepot(vehicle_list, vehicle_count - this.vehicle_target_count);
 
             foreach (vehicle in vehicle_list)
             {
@@ -105,16 +107,46 @@ function Town::GetVehicleCount(category)
 
 function Town::GetVehiclesByCategory(category)
 {
-    local vehicle_list = AIList();
+    local vehicle_list = [];
 
     foreach (vehicle in this.vehicle_list)
     {
         if (vehicle.action != Action.SELL && vehicle.category == category)
         {
-            vehicle_list.AddItem(vehicle.id, 0);
+            vehicle_list.append(vehicle);
         }
     }
 
+    return vehicle_list;
+}
+
+function Town::GetFurthestVehiclesToDepot(vehicle_list, count)
+{
+    local distances = [];
+    foreach (vehicle in vehicle_list)
+    {
+       distances.append(AIMap.DistanceManhattan(this.depot, AIVehicle.GetLocation(vehicle.id)));
+    }
+
+    local n = distances.len();
+    for (local i = 0; i < n - 1; i++)
+    {
+        for (local j = 0; j < n - i - 1; j++) 
+        {
+            if (distances[j] < distances[j+1])
+            {
+                local temp = distances[j];
+                distances[j] = distances[j+1];
+                distances[j+1] = temp;
+
+                temp = vehicle_list[j];
+                vehicle_list[j] = vehicle_list[j+1];
+                vehicle_list[j+1] = temp;
+            }
+        }
+    }
+
+    vehicle_list.resize(count);
     return vehicle_list;
 }
 
@@ -127,20 +159,6 @@ function Town::UpdateVehicles()
             this.vehicle_list.remove(i--);
         }
     }
-}
-
-function Town::GetClosestVehiclesToDepot(vehicle_list, count)
-{
-    foreach (vehicle in vehicle_list)
-    {
-        distance = AIMap.DistanceManhattan(this.depot, AIVehicle.GetLocation(vehicle));
-        vehicle_list.SetValue(vehicle, distance);
-    }
-
-    vehicle_list.Sort(AIList.SORT_BY_VALUE, true);
-    vehicle_list.KeepTop(count);
-
-    return vehicle_list;
 }
 
 function Town::BuildDepot()
