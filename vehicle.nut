@@ -69,37 +69,39 @@ function CreateEngineList()
 
     foreach (engine, index in engine_list)
     {
-        local weight = AIEngine.GetWeight(engine);
-        local speed = AIEngine.GetMaxSpeed(engine);
-        local power = AIEngine.GetPower(engine);
-        local effort = AIEngine.GetMaxTractiveEffort(engine);
-
-        // AILog.Info("Engine id: " + engine
-		// 	     + ", name:" + AIEngine.GetName(engine)
-		// 	     + ", weight: " + weight
-		// 	     + ", speed: " + speed
-		// 	     + ", power: " + power
-		// 	     + ", effort: " + effort
-		// 	     );
-
-        if (weight == 2 && speed == 127 && power == 100 && effort == 5) 
-            engine_list.SetValue(engine, Category.POLICE)
-        else if (weight == 3 && speed == 88 && power == 140 && effort == 8) 
-            engine_list.SetValue(engine, Category.AMBULANCE);
-        else if (weight == 19 && speed == 88 && power == 500 && effort == 55) 
-            engine_list.SetValue(engine, Category.FIRE);
-        else if (weight == 1 && speed == 56 && power == 50 && effort == 2) 
-            engine_list.SetValue(engine, Category.MAIL);
-        else if (weight == 1 && speed == 376 && power == 750 && effort == 5) 
-            engine_list.SetValue(engine, Category.SPORT);
-        else if (weight == 12 && speed == 64 && power == 300 && effort == 34) 
-            engine_list.SetValue(engine, Category.GARBAGE);
-        else
-            engine_list.SetValue(engine, Category.CAR);
-        
-
-        // AILog.Info("Vehicle " + AIEngine.GetName(engine) + " of category " + engine_list.GetValue(engine));
+        engine_list.SetValue(engine, GetEngineCategory(engine));
     }
 
     ::EngineList <- engine_list; // Global variable with toy engines and their categories
+}
+
+function GetEngineCategory(engine)
+{
+    local weight = AIEngine.GetWeight(engine);
+    local speed = AIEngine.GetMaxSpeed(engine);
+    local power = AIEngine.GetPower(engine);
+    local effort = AIEngine.GetMaxTractiveEffort(engine);
+
+    // AILog.Info("Engine id: " + engine
+    // 	     + ", name:" + AIEngine.GetName(engine)
+    // 	     + ", weight: " + weight
+    // 	     + ", speed: " + speed
+    // 	     + ", power: " + power
+    // 	     + ", effort: " + effort
+    // 	     );
+
+    if (weight == 2 && speed == 127 && power == 100 && effort == 5) 
+        return Category.POLICE;
+    else if (weight == 3 && speed == 88 && power == 140 && effort == 8) 
+        return Category.AMBULANCE;
+    else if (weight == 19 && speed == 88 && power == 500 && effort == 55) 
+        return Category.FIRE;
+    else if (weight == 1 && speed == 56 && power == 50 && effort == 2) 
+        return Category.MAIL;
+    else if (weight == 1 && speed == 376 && power == 750 && effort == 5) 
+        return Category.SPORT;
+    else if (weight == 12 && speed == 64 && power == 300 && effort == 34) 
+        return Category.GARBAGE;
+    else
+        return Category.CAR;
 }

@@ -11,21 +11,72 @@ class Town
 {
     id = null;                      // Town id
     depot = null;                   // Built depo
+    vehicle_group = null;           // Group ID of this town vehicles
     vehicle_list = null;            // List of owned vehicles
     directions = null;              // A list with all directions
     population = null;              // Monthly population count 
     pax_transported = null;         // Monthly percentage of transported pax
     mail_transported = null;        // Monthly percentage of transported mail
 
-    constructor(town_id)
+    constructor(town_id, load_town_data=false)
     {
         this.id = town_id;
         this.directions = [1, -1, AIMap.GetMapSizeX(), -AIMap.GetMapSizeX()];
-        this.population = 0;
-        this.pax_transported = 0;
-        this.mail_transported = 0;
-        this.vehicle_list = [];
+        this.MonthlyManageTown();
+
+        /* If there isn't saved data for the towns, we
+		 * initialize them. Otherwise, we load saved data.
+		 */
+        if (!load_town_data)
+        {
+            this.vehicle_list = [];
+            this.vehicle_group = AIGroup.CreateGroup(AIVehicle.VT_ROAD, AIGroup.GROUP_INVALID);
+            AIGroup.SetName(this.vehicle_group, AITown.GetName(this.id));
+        }
+        else
+        {
+            this.depot = ::TownDataTable[this.id].depot;
+            this.vehicle_group = ::TownDataTable[this.id].vehicle_group;
+
+            // Recreate list of vehicles from group information
+            if (AIGroup.IsValidGroup(this.vehicle_group))
+            {
+                local vehicle_list = AIVehicleList_Group(this.vehicle_group);
+                this.vehicle_list = [];
+                local sell_vehicles = ::TownDataTable[this.id].sell_vehicles;
+                foreach (vehicle, _ in vehicle_list)
+                {
+                    this.vehicle_list.append(Vehicle(vehicle, ::EngineList.GetValue(AIVehicle.GetEngineType(vehicle))));
+                    foreach (index, sell_id in sell_vehicles)
+                    {
+                        if (vehicle == sell_id)
+                        {
+                            this.vehicle_list.top().action = Action.SELL;
+                            sell_vehicles.remove(index);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
+}
+
+function Town::SaveTownData()
+{
+    local town_data = {};
+    town_data.depot <- this.depot;
+    town_data.vehicle_group <- this.vehicle_group;
+
+    local sell_vehicles = [];
+    foreach (vehicle in this.vehicle_list)
+    {
+        if (vehicle.action == Action.SELL)
+            sell_vehicles.append(vehicle.id);
+    }
+    town_data.sell_vehicles <- sell_vehicles;
+
+    return town_data;
 }
 
 function Town::ManageTown()
@@ -168,6 +219,7 @@ function Town::ManageVehiclesByCategory(target_count, category)
             if (AIVehicle.IsValidVehicle(vehicle))
             {
                 this.vehicle_list.append(Vehicle(vehicle, engine_list.GetValue(engine)));
+                AIGroup.MoveVehicle(this.vehicle_group, vehicle);
             }
             else
             {
