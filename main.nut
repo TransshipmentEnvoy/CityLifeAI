@@ -71,7 +71,7 @@ function CityLife::Init()
     // Create the towns list
 	AILog.Info("Create town list ... (can take a while on large maps)");
 	this.towns = this.CreateTownList();
-    this.UpdateTownVehicleCount();
+    this.MonthlyManageTowns();
 }
 
 function CityLife::Start()
@@ -95,7 +95,7 @@ function CityLife::Start()
         if (month - this.current_month != 0) {
             AILog.Info("Monthly update");
 
-            this.UpdateTownVehicleCount();
+            this.MonthlyManageTowns();
             this.AskForMoney();
 
             this.current_month = month;
@@ -149,10 +149,10 @@ function CityLife::CreateTownList()
     return towns_array;
 }
 
-function CityLife::UpdateTownVehicleCount()
+function CityLife::MonthlyManageTowns()
 {
     foreach (town in this.towns) {
-        town.UpdateVehicleCount();
+        town.MonthlyManageTown();
 	}
 }
 

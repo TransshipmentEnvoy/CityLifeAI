@@ -8,15 +8,15 @@
  */
 
 enum Category {
-    CAR,
-    BUS,
-    MAIL,
-    GARBAGE,
-    TRUCK,
-    POLICE,
-    AMBULANCE,
-    FIRE,
-    SPORT
+    CAR = 1,
+    BUS = 2,
+    MAIL = 4,
+    GARBAGE = 8,
+    TRUCK = 16,
+    POLICE = 32,
+    AMBULANCE = 64,
+    FIRE = 128,
+    SPORT = 256
 };
 
 enum Action {
