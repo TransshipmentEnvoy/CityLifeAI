@@ -261,8 +261,8 @@ function Town::BuildDepot()
                 }
                 else if (!(AIError.GetLastError() == AIError.ERR_LAND_SLOPED_WRONG
                         || AIError.GetLastError() == AIError.ERR_AREA_NOT_CLEAR
-                        || AIError.GetLastError() == AIError.ERR_ROAD_ONE_WAY_ROADS_CANNOT_HAVE_JUNCTIONS
-                        || AIError.GetLastError() == AIError.ERR_ROAD_WORKS_IN_PROGRESS
+                        || AIError.GetLastError() == AIRoad.ERR_ROAD_ONE_WAY_ROADS_CANNOT_HAVE_JUNCTIONS
+                        || AIError.GetLastError() == AIRoad.ERR_ROAD_WORKS_IN_PROGRESS
                         || AIError.GetLastError() == AIError.ERR_VEHICLE_IN_THE_WAY))
                 {
                     AILog.Warning("Build road :: Tile " + depot_tile + ": " + AIError.GetLastErrorString());
