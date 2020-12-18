@@ -88,14 +88,33 @@ function Town::ManageTown()
     }
     else
     {
-        local personal_count = ceil(this.population / 100.0 * this.CalculateVehicleCountDecrease(this.pax_transported, 30));
-        this.ManageVehiclesByCategory(personal_count, Category.CAR);
-        local service_count = ceil(this.population / 500.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 30, 80));
-        this.ManageVehiclesByCategory(service_count, Category.MAIL | Category.GARBAGE);
-        local emergency_count = ceil((this.population - 1000.0) / 2000.0) * 3;
-        this.ManageVehiclesByCategory(emergency_count, Category.FIRE | Category.POLICE | Category.AMBULANCE);
+        if (::EngineList.Count() > 0 || vehicle_list.len() > 0)
+        {
+            local personal_count = ceil(this.population / 100.0 * this.CalculateVehicleCountDecrease(this.pax_transported, 30));
 
-        this.UpdateVehicles();
+            if (this.GetEngineListByCategory(Category.MAIL | Category.GARBAGE).Count() > 0)
+            {
+                local service_count = ceil(this.population / 500.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 30, 80));
+                this.ManageVehiclesByCategory(service_count, Category.MAIL | Category.GARBAGE);
+            }
+            else
+            {
+                personal_count += ceil(this.population / 500.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 30, 80));
+            }
+
+            if (this.GetEngineListByCategory(Category.FIRE | Category.POLICE | Category.AMBULANCE).Count() > 0)
+            {
+                local emergency_count = ceil((this.population - 1000.0) / 2000.0) * 3;
+                this.ManageVehiclesByCategory(emergency_count, Category.FIRE | Category.POLICE | Category.AMBULANCE);
+            }
+            else
+            {
+                personal_count += ceil((this.population - 1000.0) / 2000.0) * 3;
+            }
+
+            this.ManageVehiclesByCategory(personal_count, Category.CAR);
+            this.UpdateVehicles();
+        }
     }
 }
 
