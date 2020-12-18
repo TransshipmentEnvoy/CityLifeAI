@@ -125,7 +125,7 @@ function CityLife::Start()
         }
 
         this.HandleEvents();
-        this.ManageTown(this.towns[town_index++])
+        this.ManageTown(this.towns[town_index++]);
         town_index = town_index >= this.towns.len() ? 0 : town_index;
     }
 
@@ -144,7 +144,7 @@ function CityLife::HandleEvents()
                 local town_id = event.GetTownID();
                 // AILog.Info("New town founded: " + AITown.GetName(town_id));
                 if (AITown.IsValidTown(town_id))
-                    this.towns.append(Town(town_id, false));
+                    this.towns[town_id] <- Town(town_id, false);
                 break;
 
             default: 
@@ -174,11 +174,11 @@ function CityLife::AskForMoney()
 function CityLife::CreateTownList()
 {
     local towns_list = AITownList();
-    local towns_array = [];
+    local towns_array = {};
 
     foreach (t, _ in towns_list)
     {
-        towns_array.append(Town(t, this.load_saved_data));
+        towns_array[t] <- Town(t, this.load_saved_data);
 	}
 
     return towns_array;
@@ -186,7 +186,7 @@ function CityLife::CreateTownList()
 
 function CityLife::MonthlyManageTowns()
 {
-    foreach (town in this.towns)
+    foreach (_, town in this.towns)
     {
         town.MonthlyManageTown();
 	}
@@ -213,9 +213,9 @@ function CityLife::Save()
     }
     else
     {
-        foreach (town in this.towns)
+        foreach (town_id, town in this.towns)
         {
-            save_table.town_data_table[town.id] <- town.SaveTownData();
+            save_table.town_data_table[town_id] <- town.SaveTownData();
         }
         // Also store a savegame version flag
         save_table.save_version <- this.current_save_version;
