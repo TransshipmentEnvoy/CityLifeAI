@@ -14,6 +14,15 @@ require("town.nut");
 // Import ToyLib
 import("Library.AIToyLib", "AIToyLib", 1);
 import("Library.SCPLib", "SCPLib", 45);
+import("util.superlib", "SuperLib", 40);
+
+RoadPathFinder <- SuperLib.RoadPathFinder;
+
+enum PathfinderStatus {
+    IDLE,
+    RUNNING,
+    FINISHED
+};
 
 class CityLife extends AIController
 {
@@ -25,6 +34,7 @@ class CityLife extends AIController
 	current_year = null;
     toy_lib = null;
     towns = null;
+    road_pathfinder = null;
 
     constructor() 
     {
@@ -34,6 +44,11 @@ class CityLife extends AIController
         this.current_date = 0;
         this.current_month = 0;
         this.current_year = 0;
+        this.road_pathfinder = {pathfinder =  RoadPathFinder(),
+                                status = PathfinderStatus.IDLE,
+                                town_a = null,
+                                town_b = null,
+                                road_type = null};
         ::TownDataTable <- {};
     } // constructor
 }
@@ -62,9 +77,6 @@ function CityLife::Init()
             if (i > 255) break;
         }
     }
-
-    // Set predident's name
-    AICompany.SetPresidentName("Bernie");
 
     // Enable automatic renewal of vehicles
     AICompany.SetAutoRenewStatus(true);
@@ -120,6 +132,7 @@ function CityLife::Start()
             AILog.Info("Yearly Update");
 
             CreateEngineList();
+            this.YearlyManageRoadConstruction();
 
             this.current_year = year
         }
@@ -127,8 +140,8 @@ function CityLife::Start()
         this.HandleEvents();
         this.ManageTown(this.towns[town_index++]);
         town_index = town_index >= this.towns.len() ? 0 : town_index;
+        this.ManageRoadPathfinder();
     }
-
 }
 
 function CityLife::HandleEvents()
@@ -195,6 +208,218 @@ function CityLife::MonthlyManageTowns()
 function CityLife::ManageTown(town)
 {
     town.ManageTown();
+}
+
+function CityLife::YearlyManageRoadConstruction()
+{
+    if (this.road_pathfinder.status != PathfinderStatus.IDLE)
+    {
+        return;
+    }
+
+    local town_list = AITownList();
+    town_list.Valuate(AITown.GetPopulation);
+    town_list.Sort(AIList.SORT_BY_VALUE, false);
+
+    local town_a = null;
+    foreach (town_id, population in town_list)
+    {
+        if (this.towns[town_id].connections.len() < 5 && population / 1000 > this.towns[town_id].connections.len()) // TODO: Change population to 2000
+        {
+            town_a = town_id;
+            town_list.RemoveItem(town_id);
+            break;
+        }
+    }
+
+    if (town_a == null)
+        return;
+
+    town_list.Valuate(AITown.GetDistanceManhattanToTile, AITown.GetLocation(town_a));
+    town_list.Sort(AIList.SORT_BY_VALUE, true);
+
+    local town_b = null;
+    foreach (town_id, distance in town_list)
+    {
+        if (distance < 200 && this.towns[town_id].connections.len() <= this.towns[town_a].connections.len())
+        {
+            local connection_exists = false;
+            foreach (connection in this.towns[town_a].connections)
+            {
+                if (connection == town_id)
+                {
+                    connection_exists = true;
+                    break;
+                }
+            }
+
+            if (!connection_exists)
+            {
+                town_b = town_id;
+                break;
+            }
+        }
+    }
+
+    if (town_b == null)
+        return;
+
+    this.road_pathfinder.pathfinder.InitializePath([AITown.GetLocation(town_a)], [AITown.GetLocation(town_b)], true);
+    this.road_pathfinder.pathfinder.SetMaxIterations(1000000);
+    this.road_pathfinder.pathfinder.SetStepSize(10);
+    this.road_pathfinder.status = PathfinderStatus.RUNNING;
+    this.road_pathfinder.town_a = town_a;
+    this.road_pathfinder.town_b = town_b;
+
+    local road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
+    road_types.Valuate(AIRoad.GetMaxSpeed);
+    road_types.Sort(AIList.SORT_BY_VALUE, false);
+    this.road_pathfinder.road_type = road_types.Begin();
+
+    AILog.Info("Creating path between " + AITown.GetName(town_a) + " and " +  AITown.GetName(town_b));
+}
+
+function CityLife::ManageRoadPathfinder()
+{
+    if (this.road_pathfinder.status != PathfinderStatus.RUNNING)
+        return;
+
+    AIRoad.SetCurrentRoadType(this.road_pathfinder.road_type);
+
+    local path = this.road_pathfinder.pathfinder.FindPath();
+    if (path == null)
+    {
+        local pf_err = this.road_pathfinder.pathfinder.GetFindPathError();
+        if (pf_err != RoadPathFinder.PATH_FIND_NO_ERROR)
+        {
+            AILog.Info("Path between " + AITown.GetName(this.road_pathfinder.town_a) + " and " + AITown.GetName(this.road_pathfinder.town_b) + " failed " + pf_err);
+            this.towns[this.road_pathfinder.town_a].connections.append(this.road_pathfinder.town_b);
+            this.towns[this.road_pathfinder.town_b].connections.append(this.road_pathfinder.town_a);
+        }
+        return;
+    }
+
+    AILog.Info("Building path between " + AITown.GetName(this.road_pathfinder.town_a) + " and " + AITown.GetName(this.road_pathfinder.town_b));
+    while (path != null) {
+		local par = path.GetParent();
+
+		if (par != null) {
+			local last_node = path.GetTile();
+
+			if (AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) == 1 ) 
+            {
+				if (AIRoad.AreRoadTilesConnected(path.GetTile(), par.GetTile())) 
+                {
+					if (AITile.HasTransportType(par.GetTile(), AITile.TRANSPORT_RAIL))
+					{
+						local bridge_result = SuperLib.Road.ConvertRailCrossingToBridge(par.GetTile(), path.GetTile());
+						if (bridge_result.succeeded == true)
+						{
+							local new_par = par;
+							while (new_par != null && new_par.GetTile() != bridge_result.bridge_start && new_par.GetTile() != bridge_result.bridge_end)
+							{
+								new_par = new_par.GetParent();
+							}
+							
+							par = new_par;
+						}
+						else
+						{
+							AILog.Info("Failed to bridge railway crossing");
+						}
+					}
+
+				} else {
+
+					/* Look for longest straight road and build it as one build command */
+					local straight_begin = path;
+					local straight_end = par;
+
+                    local prev = straight_end.GetParent();
+                    while(prev != null && 
+                            SuperLib.Tile.IsStraight(straight_begin.GetTile(), prev.GetTile()) &&
+                            AIMap.DistanceManhattan(straight_end.GetTile(), prev.GetTile()) == 1)
+                    {
+                        straight_end = prev;
+                        prev = straight_end.GetParent();
+                    }
+
+                    /* update the looping vars. (path is set to par in the end of the main loop) */
+                    par = straight_end;
+
+					// Build road
+					local result = AIRoad.BuildRoad(straight_begin.GetTile(), straight_end.GetTile());
+                    if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT)
+                        AILog.Info("Build road error: " + AIError.GetLastErrorString());
+				}
+			} else {
+				if (AIBridge.IsBridgeTile(path.GetTile())) {
+					/* A bridge exists */
+
+					// Check if it is a bridge with low speed
+					local bridge_type_id = AIBridge.GetBridgeID(path.GetTile())
+					local bridge_max_speed = AIBridge.GetMaxSpeed(bridge_type_id);
+
+					if(bridge_max_speed < 100) // low speed bridge
+					{
+						local other_end_tile = AIBridge.GetOtherBridgeEnd(path.GetTile());
+						local bridge_length = AIMap.DistanceManhattan( path.GetTile(), other_end_tile ) + 1;
+						local bridge_list = AIBridgeList_Length(bridge_length);
+
+						bridge_list.Valuate(AIBridge.GetMaxSpeed);
+						bridge_list.KeepAboveValue(bridge_max_speed);
+
+						if(!bridge_list.IsEmpty())
+						{
+							// Pick a random faster bridge than the current one
+							bridge_list.Valuate(AIBase.RandItem);
+							bridge_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+
+							// Upgrade the bridge
+							local result = AIBridge.BuildBridge( AIVehicle.VT_ROAD, bridge_list.Begin(), path.GetTile(), other_end_tile );
+                            if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT)
+							    AILog.Info("Upgrade bridge error: " + AIError.GetLastErrorString());
+						}
+					}
+
+				} else if(AITunnel.IsTunnelTile(path.GetTile())) {
+					/* A tunnel exists */
+					
+					// All tunnels have equal speed so nothing to do
+				} else {
+					/* Build a bridge or tunnel. */
+
+					/* If it was a road tile, demolish it first. Do this to work around expended roadbits. */
+					if (AIRoad.IsRoadTile(path.GetTile()) && 
+							!AIRoad.IsRoadStationTile(path.GetTile()) &&
+							!AIRoad.IsRoadDepotTile(path.GetTile())) {
+						AITile.DemolishTile(path.GetTile());
+					}
+					if (AITunnel.GetOtherTunnelEnd(path.GetTile()) == par.GetTile()) {
+
+						local result = AITunnel.BuildTunnel(AIVehicle.VT_ROAD, path.GetTile());
+						if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
+                            AILog.Info("Upgrade tunnel error: " + AIError.GetLastErrorString());
+						}
+					} else {
+						local bridge_list = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) +1);
+						bridge_list.Valuate(AIBridge.GetMaxSpeed);
+
+						local result = AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridge_list.Begin(), path.GetTile(), par.GetTile());
+						if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
+                            AILog.Info("Upgrade bridge error: " + AIError.GetLastErrorString());
+						}
+					}
+				}
+			}
+		}
+		path = par;
+	}
+
+    this.road_pathfinder.status = PathfinderStatus.IDLE;
+    AILog.Info("Path between " + AITown.GetName(this.road_pathfinder.town_a) + " and " + AITown.GetName(this.road_pathfinder.town_b) + " built");
+    this.towns[this.road_pathfinder.town_a].connections.append(this.road_pathfinder.town_b);
+    this.towns[this.road_pathfinder.town_b].connections.append(this.road_pathfinder.town_a);
 }
 
 function CityLife::Save()

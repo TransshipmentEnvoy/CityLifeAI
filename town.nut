@@ -17,6 +17,7 @@ class Town
     population = null;              // Monthly population count 
     pax_transported = null;         // Monthly percentage of transported pax
     mail_transported = null;        // Monthly percentage of transported mail
+    connections = null;             // List of established road connections
 
     constructor(town_id, load_town_data=false)
     {
@@ -29,6 +30,7 @@ class Town
 		 */
         if (!load_town_data)
         {
+            this.connections = [];
             this.vehicle_list = [];
             this.vehicle_group = AIGroup.CreateGroup(AIVehicle.VT_ROAD, AIGroup.GROUP_INVALID);
             AIGroup.SetName(this.vehicle_group, AITown.GetName(this.id));
@@ -37,6 +39,7 @@ class Town
         {
             this.depot = ::TownDataTable[this.id].depot;
             this.vehicle_group = ::TownDataTable[this.id].vehicle_group;
+            this.connections = ::TownDataTable[this.id].connections;
 
             // Recreate list of vehicles from group information
             if (AIGroup.IsValidGroup(this.vehicle_group))
@@ -67,6 +70,7 @@ function Town::SaveTownData()
     local town_data = {};
     town_data.depot <- this.depot;
     town_data.vehicle_group <- this.vehicle_group;
+    town_data.connections <- this.connections;
 
     local sell_vehicles = [];
     foreach (vehicle in this.vehicle_list)
