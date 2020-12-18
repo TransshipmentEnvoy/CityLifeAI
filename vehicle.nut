@@ -105,3 +105,77 @@ function GetEngineCategory(engine)
     else
         return Category.CAR;
 }
+
+function GetVehicleCountByCategory(vehicle_list, category)
+{
+    local count = 0;
+
+    foreach (vehicle in vehicle_list)
+    {
+        if (vehicle.action != Action.SELL && vehicle.category & category)
+        {
+            ++count;
+        }
+    }
+
+    return count;
+}
+
+function GetVehiclesByCategory(vehicle_list, category)
+{
+    local vehicle_cat_list = [];
+
+    foreach (vehicle in vehicle_list)
+    {
+        if (vehicle.action != Action.SELL && vehicle.category & category)
+        {
+            vehicle_cat_list.append(vehicle);
+        }
+    }
+
+    return vehicle_cat_list;
+}
+
+function GetEngineListByCategory(category)
+{
+    local engine_list = AIList();
+    foreach (engine, cat in ::EngineList)
+    {
+        if (category & cat)
+        {
+            engine_list.AddItem(engine, category);
+        }
+    }
+
+    return engine_list;
+}
+
+function GetFurthestVehiclesToDepot(vehicle_list, depot, count)
+{
+    local distances = [];
+    foreach (vehicle in vehicle_list)
+    {
+       distances.append(AIMap.DistanceManhattan(depot, AIVehicle.GetLocation(vehicle.id)));
+    }
+
+    local n = distances.len();
+    for (local i = 0; i < n - 1; i++)
+    {
+        for (local j = 0; j < n - i - 1; j++) 
+        {
+            if (distances[j] < distances[j+1])
+            {
+                local temp = distances[j];
+                distances[j] = distances[j+1];
+                distances[j+1] = temp;
+
+                temp = vehicle_list[j];
+                vehicle_list[j] = vehicle_list[j+1];
+                vehicle_list[j+1] = temp;
+            }
+        }
+    }
+
+    vehicle_list.resize(count);
+    return vehicle_list;
+}

@@ -92,7 +92,7 @@ function Town::ManageTown()
         {
             local personal_count = ceil(this.population / 100.0 * this.CalculateVehicleCountDecrease(this.pax_transported, 30));
 
-            if (this.GetEngineListByCategory(Category.MAIL | Category.GARBAGE).Count() > 0)
+            if (GetEngineListByCategory(Category.MAIL | Category.GARBAGE).Count() > 0)
             {
                 local service_count = ceil(this.population / 500.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 30, 80));
                 this.ManageVehiclesByCategory(service_count, Category.MAIL | Category.GARBAGE);
@@ -102,7 +102,7 @@ function Town::ManageTown()
                 personal_count += ceil(this.population / 500.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 30, 80));
             }
 
-            if (this.GetEngineListByCategory(Category.FIRE | Category.POLICE | Category.AMBULANCE).Count() > 0)
+            if (GetEngineListByCategory(Category.FIRE | Category.POLICE | Category.AMBULANCE).Count() > 0)
             {
                 local emergency_count = ceil((this.population - 1000.0) / 2000.0) * 3;
                 this.ManageVehiclesByCategory(emergency_count, Category.FIRE | Category.POLICE | Category.AMBULANCE);
@@ -133,90 +133,16 @@ function Town::MonthlyManageTown()
     // AILog.Info("Personal = " + personal_count + ", Services = " + service_count + ", Emergency = " + emergency_count);
 }
 
-function Town::GetVehicleCountByCategory(category)
-{
-    local count = 0;
-
-    foreach (vehicle in this.vehicle_list)
-    {
-        if (vehicle.action != Action.SELL && vehicle.category & category)
-        {
-            ++count;
-        }
-    }
-
-    return count;
-}
-
-function Town::GetVehiclesByCategory(category)
-{
-    local vehicle_list = [];
-
-    foreach (vehicle in this.vehicle_list)
-    {
-        if (vehicle.action != Action.SELL && vehicle.category & category)
-        {
-            vehicle_list.append(vehicle);
-        }
-    }
-
-    return vehicle_list;
-}
-
-function Town::GetEngineListByCategory(category)
-{
-    local engine_list = AIList();
-    foreach (engine, cat in ::EngineList)
-    {
-        if (category & cat)
-        {
-            engine_list.AddItem(engine, category);
-        }
-    }
-
-    return engine_list;
-}
-
-function Town::GetFurthestVehiclesToDepot(vehicle_list, count)
-{
-    local distances = [];
-    foreach (vehicle in vehicle_list)
-    {
-       distances.append(AIMap.DistanceManhattan(this.depot, AIVehicle.GetLocation(vehicle.id)));
-    }
-
-    local n = distances.len();
-    for (local i = 0; i < n - 1; i++)
-    {
-        for (local j = 0; j < n - i - 1; j++) 
-        {
-            if (distances[j] < distances[j+1])
-            {
-                local temp = distances[j];
-                distances[j] = distances[j+1];
-                distances[j+1] = temp;
-
-                temp = vehicle_list[j];
-                vehicle_list[j] = vehicle_list[j+1];
-                vehicle_list[j+1] = temp;
-            }
-        }
-    }
-
-    vehicle_list.resize(count);
-    return vehicle_list;
-}
-
 function Town::ManageVehiclesByCategory(target_count, category)
 {
-    local vehicle_count = this.GetVehicleCountByCategory(category);
+    local vehicle_count = GetVehicleCountByCategory(this.vehicle_list, category);
     // AILog.Info(AITown.GetName(this.id) + ": " + category + " (" + vehicle_count + "/" + target_count + ")");
     if (vehicle_count > target_count)
     {
         // AILog.Info("Selling " + (vehicle_count - target_count) + " vehicles of type " + category);
 
-        local vehicle_list = this.GetVehiclesByCategory(category);
-        vehicle_list = this.GetFurthestVehiclesToDepot(vehicle_list, vehicle_count - target_count);
+        local vehicle_list = GetVehiclesByCategory(this.vehicle_list, category);
+        vehicle_list = GetFurthestVehiclesToDepot(vehicle_list, this.depot, vehicle_count - target_count);
 
         foreach (vehicle in vehicle_list)
         {
@@ -230,7 +156,7 @@ function Town::ManageVehiclesByCategory(target_count, category)
 
         // AILog.Info("Buying " + (target_count - vehicle_count) + " vehicles of type " + category);
 
-        local engine_list = this.GetEngineListByCategory(category)
+        local engine_list = GetEngineListByCategory(category)
         local engine = engine_list.Begin();
         for (local i = 0; (i < target_count - vehicle_count) && (company_vehicles_count + i < max_vehicles); ++i)
         {
