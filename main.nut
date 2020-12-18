@@ -124,14 +124,33 @@ function CityLife::Start()
             this.current_year = year
         }
 
-        //AILog.Info("Processing town index " + town_index);
+        this.HandleEvents();
         this.ManageTown(this.towns[town_index++])
-        if (town_index >= this.towns.len())
-        {
-            town_index = 0;
-        }
+        town_index = town_index >= this.towns.len() ? 0 : town_index;
     }
 
+}
+
+function CityLife::HandleEvents()
+{
+    while (AIEventController.IsEventWaiting()) 
+    {
+		local event = AIEventController.GetNextEvent();
+		switch (event.GetEventType())
+        {
+		    // On town founding, add a new town to the list
+            case AIEvent.ET_TOWN_FOUNDED:
+                event = AIEventTownFounded.Convert(event);
+                local town_id = event.GetTownID();
+                // AILog.Info("New town founded: " + AITown.GetName(town_id));
+                if (AITown.IsValidTown(town_id))
+                    this.towns.append(Town(town_id, false));
+                break;
+
+            default: 
+                break;
+		}
+	}
 }
 
 function CityLife::AskForMoney()
