@@ -11,9 +11,9 @@ class Town
 {
     id = null;                      // Town id
     depot = null;                   // Built depo
+    road_type = null;               // Road type of the town
     vehicle_group = null;           // Group ID of this town vehicles
     vehicle_list = null;            // List of owned vehicles
-    directions = null;              // A list with all directions
     population = null;              // Monthly population count 
     pax_transported = null;         // Monthly percentage of transported pax
     mail_transported = null;        // Monthly percentage of transported mail
@@ -21,7 +21,7 @@ class Town
     constructor(town_id, load_town_data=false)
     {
         this.id = town_id;
-        this.directions = [1, -1, AIMap.GetMapSizeX(), -AIMap.GetMapSizeX()];
+        this.road_type = this.GetRoadType();
         this.MonthlyManageTown();
 
         /* If there isn't saved data for the towns, we
@@ -260,9 +260,22 @@ function Town::UpdateVehicles()
     }
 }
 
+function Town::GetRoadType()
+{
+    local town_location = AITown.GetLocation(this.id);
+    local road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
+    foreach(road, _ in road_types)
+    {
+        if (AIRoad.HasRoadType(town_location, road))
+            return road;
+    }
+
+    return AIRoad.ROADTRAMTYPES_ROAD;
+}
+
 function Town::BuildDepot()
 {
-    AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
+    AIRoad.SetCurrentRoadType(this.road_type);
 
     local depot_placement_tiles = AITileList();
     local town_location = AITown.GetLocation(this.id);
@@ -290,6 +303,7 @@ function Town::BuildDepot()
 
 	// Look for a suitable spot and test if we can build there.
     local depot_tile = depot_placement_tiles.Begin();
+    local directions = [1, -1, AIMap.GetMapSizeX(), -AIMap.GetMapSizeX()];
     while(!depot_placement_tiles.IsEnd()) {
         foreach (direction in directions)
         {
