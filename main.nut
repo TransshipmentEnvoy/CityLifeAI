@@ -151,6 +151,14 @@ function CityLife::HandleEvents()
                     this.towns[town_id] <- Town(town_id, false);
                 break;
 
+            case AIEvent.ET_VEHICLE_LOST:
+                event = AIEventVehicleLost.Convert(event);
+                AIVehicle.SendVehicleToDepot(event.GetVehicleID());
+                break;
+
+            // case AIEvent.ET_VEHICLE_CRASHED: // TODO: Handle crash
+            //     break;
+
             default: 
                 break;
 		}
@@ -209,7 +217,10 @@ function CityLife::YearlyManageRoadBuilder()
 function CityLife::ManageRoadBuilder()
 {
     if (this.road_builder.FindPath(this.towns))
+    {
         this.road_builder.BuildRoad(this.towns);
+        this.towns[this.road_builder.town_a].Parade(this.towns[this.road_builder.town_b]);
+    }
 }
 
 function CityLife::Save()

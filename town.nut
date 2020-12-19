@@ -221,3 +221,36 @@ function Town::GetRoadType()
 
     return AIRoad.ROADTRAMTYPES_ROAD;
 }
+
+function Town::Parade(town_b)
+{
+    local company_vehicles_count = AIVehicleList().Count();
+    local max_vehicles = AIGameSettings.GetValue("max_roadveh");
+
+    local engine_list = GetEngineListByCategory(Category.SPORT);
+    if (engine_list.Count() == 0)
+        return;
+
+    local engine = engine_list.Begin();
+    for (local i = 0; (i < 10) && (company_vehicles_count + i < max_vehicles); ++i)
+    {
+        local purchased = AIVehicle.BuildVehicle(this.depot, engine);
+        if (AIVehicle.IsValidVehicle(purchased))
+        {
+            local vehicle = Vehicle(purchased, engine_list.GetValue(engine));
+            vehicle.action = Action.SELL;
+            this.vehicle_list.append(vehicle);
+            AIVehicle.StartStopVehicle(purchased);
+            AIGroup.MoveVehicle(this.vehicle_group, purchased);
+            AIOrder.AppendOrder(purchased, town_b.depot, AIOrder.OF_STOP_IN_DEPOT);
+        }
+        else
+        {
+            break;
+        }
+
+        engine = engine_list.Next();
+        if (engine_list.IsEnd())
+            engine = engine_list.Begin();
+    }
+}
