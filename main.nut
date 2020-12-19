@@ -224,7 +224,7 @@ function CityLife::YearlyManageRoadConstruction()
     local town_a = null;
     foreach (town_id, population in town_list)
     {
-        if (this.towns[town_id].connections.len() < 5 && population / 1000 > this.towns[town_id].connections.len()) // TODO: Change population to 2000
+        if (this.towns[town_id].connections.len() < 5 && population / 2000 > this.towns[town_id].connections.len())
         {
             town_a = town_id;
             town_list.RemoveItem(town_id);
@@ -241,7 +241,7 @@ function CityLife::YearlyManageRoadConstruction()
     local town_b = null;
     foreach (town_id, distance in town_list)
     {
-        if (distance < 200 && this.towns[town_id].connections.len() <= this.towns[town_a].connections.len())
+        if (distance < 100 && this.towns[town_id].connections.len() <= this.towns[town_a].connections.len())
         {
             local connection_exists = false;
             foreach (connection in this.towns[town_a].connections)
@@ -261,12 +261,14 @@ function CityLife::YearlyManageRoadConstruction()
         }
     }
 
-    if (town_b == null)
+    if (town_b == null) {
+        this.towns[town_a].connections.append(-1); // No available town to connect to, increase the connections
         return;
+    }
 
     this.road_pathfinder.pathfinder.InitializePath([AITown.GetLocation(town_a)], [AITown.GetLocation(town_b)], true);
-    this.road_pathfinder.pathfinder.SetMaxIterations(1000000);
-    this.road_pathfinder.pathfinder.SetStepSize(10);
+    this.road_pathfinder.pathfinder.SetMaxIterations(500000);
+    this.road_pathfinder.pathfinder.SetStepSize(100);
     this.road_pathfinder.status = PathfinderStatus.RUNNING;
     this.road_pathfinder.town_a = town_a;
     this.road_pathfinder.town_b = town_b;
@@ -295,6 +297,7 @@ function CityLife::ManageRoadPathfinder()
             AILog.Info("Path between " + AITown.GetName(this.road_pathfinder.town_a) + " and " + AITown.GetName(this.road_pathfinder.town_b) + " failed " + pf_err);
             this.towns[this.road_pathfinder.town_a].connections.append(this.road_pathfinder.town_b);
             this.towns[this.road_pathfinder.town_b].connections.append(this.road_pathfinder.town_a);
+            this.road_pathfinder.status = PathfinderStatus.IDLE;
         }
         return;
     }
