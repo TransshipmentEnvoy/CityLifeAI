@@ -249,11 +249,15 @@ function RoadBuilder::BuildRoad(towns)
 
 						local result = AITunnel.BuildTunnel(AIVehicle.VT_ROAD, this.path.GetTile());
 						if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
-                            AILog.Info("Upgrade tunnel error: " + AIError.GetLastErrorString());
+                            AILog.Info("Build tunnel error: " + AIError.GetLastErrorString());
 						}
 					} else {
 						local bridge_list = AIBridgeList_Length(AIMap.DistanceManhattan(this.path.GetTile(), par.GetTile()) +1);
 						bridge_list.Valuate(AIBridge.GetMaxSpeed);
+                        bridge_list.KeepAboveValue(100);
+
+                        bridge_list.Valuate(AIBase.RandItem);
+                        bridge_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 
                         local result = false;
                         while (!result)
@@ -264,7 +268,7 @@ function RoadBuilder::BuildRoad(towns)
                         }
 
                         if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT)
-                            AILog.Info("Upgrade bridge error: " + AIError.GetLastErrorString());
+                            AILog.Info("Build bridge error: " + AIError.GetLastErrorString());
 					}
 				}
 			}

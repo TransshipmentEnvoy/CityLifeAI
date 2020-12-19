@@ -111,6 +111,7 @@ function CityLife::Start()
             AILog.Info("Monthly update");
 
             this.MonthlyManageTowns();
+            this.MonthlyManageRoadBuilder();
             this.AskForMoney();
 
             this.current_month = month;
@@ -123,7 +124,6 @@ function CityLife::Start()
             AILog.Info("Yearly Update");
 
             CreateEngineList();
-            this.YearlyManageRoadBuilder();
 
             this.current_year = year
         }
@@ -209,7 +209,7 @@ function CityLife::ManageTown(town)
     town.ManageTown();
 }
 
-function CityLife::YearlyManageRoadBuilder()
+function CityLife::MonthlyManageRoadBuilder()
 {
     this.road_builder.Init(this.towns);
 }
