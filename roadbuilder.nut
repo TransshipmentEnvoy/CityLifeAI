@@ -44,6 +44,7 @@ function RoadBuilder::Init(towns)
     this.pathfinder.SetStepSize(100);
     this.status = PathfinderStatus.RUNNING;
 
+    AILog.Info("Planning road between " + AITown.GetName(this.town_a) + " and " + AITown.GetName(this.town_b));
     return true;
 }
 
@@ -72,7 +73,7 @@ function RoadBuilder::FindTownsToConnect(towns)
         }
     }
 
-    if (this.town_a == null)
+    if (this.town_a == null || towns[this.town_a].depot == null)
         return false;
 
     town_list.Valuate(AITown.GetDistanceManhattanToTile, AITown.GetLocation(this.town_a));
@@ -100,6 +101,9 @@ function RoadBuilder::FindTownsToConnect(towns)
             }
         }
     }
+
+    if (towns[this.town_a].depot == null)
+        return false;
 
     if (this.town_b == null) {
         towns[this.town_a].connections.append(-1); // No available town to connect to, increase the connections
@@ -135,7 +139,6 @@ function RoadBuilder::FindPath(towns)
 
 function RoadBuilder::BuildRoad(towns)
 {
-    AILog.Info("Building road between " + AITown.GetName(this.town_a) + " and " + AITown.GetName(this.town_b));
     while (this.path != null) {
 		local par = this.path.GetParent();
 

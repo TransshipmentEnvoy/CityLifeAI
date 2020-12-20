@@ -43,12 +43,9 @@ for file in files:
 copy2('readme.txt', tmp_dir)
 copy2('changelog.txt', tmp_dir)
 
-with tarfile.open(tar_name, "w:") as tar_handle:
+with tarfile.open(Path("./releases") / tar_name, "w:") as tar_handle:
     for root, dirs, files in os.walk(tmp_dir):
         for file in files:
             tar_handle.add(os.path.join(root, file))
 
 rmtree(tmp_dir)
-
-game_folder = Path("./releases")
-copy2(tar_name, game_folder)
