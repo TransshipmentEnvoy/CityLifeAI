@@ -209,6 +209,20 @@ function Town::UpdateVehicles()
     }
 }
 
+function Town::RemoveVehicle(vehicle_id)
+{
+    for (local i = 0; i < this.vehicle_list.len(); ++i)
+    {
+        if (this.vehicle_list[i].id == vehicle_id)
+        {
+            this.vehicle_list.remove(i);
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function Town::GetRoadType()
 {
     local town_location = AITown.GetLocation(this.id);

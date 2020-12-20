@@ -104,6 +104,7 @@ function CityLife::Start()
         {
             this.current_date = date;
 
+            this.HandleEvents();
             AIToyLib.Check();
         }
 
@@ -131,7 +132,6 @@ function CityLife::Start()
             this.current_year = year
         }
 
-        this.HandleEvents();
         this.ManageTown(this.towns[town_index++]);
         town_index = town_index >= this.towns.len() ? 0 : town_index;
         this.ManageRoadBuilder();
@@ -154,13 +154,22 @@ function CityLife::HandleEvents()
                     this.towns[town_id] <- Town(town_id, false);
                 break;
 
+            // Lost vehicles are sent to the nearest depot (for parade)
             case AIEvent.ET_VEHICLE_LOST:
                 event = AIEventVehicleLost.Convert(event);
                 AIVehicle.SendVehicleToDepot(event.GetVehicleID());
                 break;
 
-            // case AIEvent.ET_VEHICLE_CRASHED: // TODO: Handle crash
-            //     break;
+            // On vehicle crash, remove the vehicle from its towns vehicle list
+            case AIEvent.ET_VEHICLE_CRASHED:
+                event = AIEventVehicleCrashed.Convert(event);
+                local vehicle_id = event.GetVehicleID();
+                foreach (town_id, town in this.towns)
+                {
+                    if (town.RemoveVehicle(vehicle_id))
+                        break;
+                }
+                break;
 
             default: 
                 break;
@@ -222,9 +231,6 @@ function CityLife::MonthlyManageRoadBuilder()
 
 function CityLife::ManageRoadBuilder()
 {
-    if (this.road_builder.status != PathfinderStatus.RUNNING)
-        return;
-
     if (this.road_builder.FindPath(this.towns))
     {
         this.road_builder.BuildRoad(this.towns);
