@@ -161,7 +161,15 @@ function Town::ManageVehiclesByCategory(target_count, category)
         // AILog.Info("Buying " + (target_count - vehicle_count) + " vehicles of type " + category);
 
         local engine_list = GetEngineListByCategory(category)
+
+        // Randomize start of the vehicle list
         local engine = engine_list.Begin();
+        local rand = AIBase.RandRange(engine_list.Count());
+        for (local i = 0; i < rand; ++i)
+        {
+            engine = engine_list.Next();
+        }
+
         for (local i = 0; (i < target_count - vehicle_count) && (company_vehicles_count + i < max_vehicles); ++i)
         {
             local vehicle = AIVehicle.BuildVehicle(this.depot, engine);
