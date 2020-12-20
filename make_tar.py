@@ -49,3 +49,5 @@ with tarfile.open(Path("./releases") / tar_name, "w:") as tar_handle:
             tar_handle.add(os.path.join(root, file))
 
 rmtree(tmp_dir)
+
+print("Created " + str(Path("./releases") / tar_name))
