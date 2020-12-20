@@ -24,6 +24,7 @@ class CityLife extends AIController
     load_saved_data = null;
     current_save_version = null;
     ai_init_done = null;
+    duplicit_ai = null;
     current_date = null;
 	current_month = null;
 	current_year = null;
@@ -36,6 +37,7 @@ class CityLife extends AIController
         this.load_saved_data = false;
         this.current_save_version = SELF_VERSION;
         this.ai_init_done = false;
+        this.duplicit_ai = false;
         this.current_date = 0;
         this.current_month = 0;
         this.current_year = 0;
@@ -61,6 +63,7 @@ function CityLife::Init()
     // Set company name
     if (!AICompany.SetName("CityLifeAI")) 
     {
+        this.duplicit_ai = true;
         local i = 2;
         while (!AICompany.SetName("CityLifeAI #" + i)) 
         {
@@ -211,11 +214,17 @@ function CityLife::ManageTown(town)
 
 function CityLife::MonthlyManageRoadBuilder()
 {
+    if (this.duplicit_ai)
+        return;
+
     this.road_builder.Init(this.towns);
 }
 
 function CityLife::ManageRoadBuilder()
 {
+    if (this.road_builder.status != PathfinderStatus.RUNNING)
+        return;
+
     if (this.road_builder.FindPath(this.towns))
     {
         this.road_builder.BuildRoad(this.towns);
