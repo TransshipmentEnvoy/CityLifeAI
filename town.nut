@@ -147,13 +147,10 @@ function Town::ManageVehiclesByCategory(target_count, category)
     if (vehicle_count > target_count)
     {
         // AILog.Info("Selling " + (vehicle_count - target_count) + " vehicles of type " + category);
-
         local vehicle_list = GetVehiclesByCategory(this.vehicle_list, category);
-        vehicle_list = GetFurthestVehiclesToDepot(vehicle_list, this.depot, vehicle_count - target_count);
-
-        foreach (vehicle in vehicle_list)
+        for (local i = 0; i < vehicle_count - target_count; ++i)
         {
-            vehicle.Sell();
+            vehicle_list[i].Sell();
         }
     }
     else if (vehicle_count < target_count)
