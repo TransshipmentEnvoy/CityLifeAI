@@ -251,7 +251,9 @@ function Town::Parade(town_b)
 
     local engine_list = GetEngineListByCategory(Category.SPORT);
     if (engine_list.Count() == 0)
-        return;
+        engine_list = AIEngineList(AIVehicle.VT_ROAD);
+        engine_list.Valuate(AIEngine.GetMaxSpeed);
+        engine_list.KeepTop(1);
 
     local engine = engine_list.Begin();
     for (local i = 0; (i < 10) && (company_vehicles_count + i < max_vehicles); ++i)
