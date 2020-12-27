@@ -60,21 +60,24 @@ function CityLife::Init()
     this.current_month = AIDate.GetMonth(date);
     this.current_year = AIDate.GetYear(date);
 
-    // Set company name
-    if (!AICompany.SetName("CityLifeAI")) 
+    if (!this.load_saved_data)
     {
-        this.duplicit_ai = true;
-        local i = 2;
-        while (!AICompany.SetName("CityLifeAI #" + i)) 
+        // Set company name
+        if (!AICompany.SetName("CityLifeAI")) 
         {
-            i += 1;
-            if (i > 255) break;
+            this.duplicit_ai = true;
+            local i = 2;
+            while (!AICompany.SetName("CityLifeAI #" + i)) 
+            {
+                i += 1;
+                if (i > 255) break;
+            }
         }
-    }
 
-    // Enable automatic renewal of vehicles
-    AICompany.SetAutoRenewStatus(true);
-    AICompany.SetAutoRenewMonths(1);
+        // Enable automatic renewal of vehicles
+        AICompany.SetAutoRenewStatus(true);
+        AICompany.SetAutoRenewMonths(1);
+    }
 
     // Create Vehicles list
     CreateEngineList();
