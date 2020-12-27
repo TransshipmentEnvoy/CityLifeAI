@@ -71,6 +71,7 @@ function CreateEngineList()
     {
         engine_list.SetValue(engine, GetEngineCategory(engine));
     }
+    engine_list.Sort(AIList.SORT_BY_VALUE, true);
 
     ::EngineList <- engine_list; // Global variable with toy engines and their categories
 }

@@ -85,6 +85,9 @@ function Town::SaveTownData()
 
 function Town::ManageTown()
 {
+    if (::EngineList.Count() == 0)
+        return;
+
     if (this.depot == null)
     {
         // AILog.Info("Trying to build a depot in town " + AITown.GetName(this.id));
@@ -233,15 +236,11 @@ function Town::RemoveVehicle(vehicle_id)
 
 function Town::GetRoadType()
 {
-    local town_location = AITown.GetLocation(this.id);
     local road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
-    foreach(road, _ in road_types)
-    {
-        if (AIRoad.HasRoadType(town_location, road))
-            return road;
-    }
-
-    return AIRoad.ROADTRAMTYPES_ROAD;
+    if (road_types.Count() == 0)
+        return AIRoad.ROADTYPE_ROAD;
+   
+    return AIEngine.GetRoadType(::EngineList.Begin());
 }
 
 function Town::Parade(town_b)
