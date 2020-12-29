@@ -280,6 +280,6 @@ function CityLife::Load(version, saved_data)
     }
     else 
     {
-		Log.Info("Data format doesn't match with current version. Resetting.", Log.LVL_INFO);
+		AILog.Info("Data format doesn't match with current version. Resetting.");
 	}
 }
