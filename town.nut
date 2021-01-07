@@ -11,7 +11,6 @@ class Town
 {
     id = null;                      // Town id
     depot = null;                   // Built depo
-    road_type = null;               // Road type of the town
     vehicle_group = null;           // Group ID of this town vehicles
     vehicle_list = null;            // List of owned vehicles
     population = null;              // Monthly population count 
@@ -22,7 +21,6 @@ class Town
     constructor(town_id, load_town_data=false)
     {
         this.id = town_id;
-        this.road_type = this.GetRoadType();
         this.MonthlyManageTown();
 
         /* If there isn't saved data for the towns, we
@@ -91,7 +89,7 @@ function Town::ManageTown()
     if (this.depot == null)
     {
         // AILog.Info("Trying to build a depot in town " + AITown.GetName(this.id));
-        this.depot = BuildDepot(this.id, this.road_type);
+        this.depot = BuildDepot(this.id);
     }
     else
     {
@@ -229,15 +227,6 @@ function Town::RemoveVehicle(vehicle_id)
     }
 
     return false;
-}
-
-function Town::GetRoadType()
-{
-    local road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
-    if (road_types.Count() == 0)
-        return AIRoad.ROADTYPE_ROAD;
-   
-    return AIEngine.GetRoadType(::EngineList.Begin());
 }
 
 function Town::Parade(town_b)

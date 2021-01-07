@@ -37,7 +37,7 @@ function RoadBuilder::Init(towns)
     if (!this.FindTownsToConnect(towns))
         return false;
     
-    this.road_type =this.FindFastestRoadType();
+    this.road_type = this.FindFastestRoadType();
 
     this.pathfinder.InitializePath([AITown.GetLocation(this.town_a)], [AITown.GetLocation(this.town_b)], true);
     this.pathfinder.SetMaxIterations(500000);
@@ -52,7 +52,12 @@ function RoadBuilder::FindFastestRoadType()
 {
     local road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
     road_types.Valuate(AIRoad.GetMaxSpeed);
-    road_types.Sort(AIList.SORT_BY_VALUE, false);
+
+    road_types.Sort(AIList.SORT_BY_VALUE, true); // Check for unlimited speed road
+    if (road_types.GetValue(road_types.Begin()) == 0)
+        return road_types.Begin();
+
+    road_types.Sort(AIList.SORT_BY_VALUE, false); // Pick fastest limited speed road
     return road_types.Begin();
 }
 
@@ -285,12 +290,56 @@ function RoadBuilder::BuildRoad(towns)
     towns[this.town_b].connections.append(this.town_a);
 }
 
-function BuildDepot(town_id, road_type)
+function GetRoadType(location)
 {
-    AIRoad.SetCurrentRoadType(road_type);
+    local road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
+    local dummy = AITestMode();
 
+    // Check if the road type at the location is usable
+    foreach (road, _ in road_types) 
+    {
+        if (!AIRoad.ConvertRoadType(location, location, road) && AIError.GetLastError() == AIRoad.ERR_UNSUITABLE_ROAD)
+            return road;
+    }
+
+    // Get the default road for an engine type and check if it is available to the AI
+    local engine = ::EngineList.Begin();
+    if (AIRoad.IsRoadTypeAvailable(AIEngine.GetRoadType(engine)))
+        return AIEngine.GetRoadType(engine);
+
+    // Filter roads to only those that are compatible to an engine and randomly chose one
+    local compatible_road_types = AIList();
+    foreach (road, _ in road_types)
+    {
+        if (AIEngine.CanRunOnRoad(engine, road))
+            compatible_road_types.AddItem(road, 0);
+    }
+
+    if (compatible_road_types.Count() == 1)
+        return compatible_road_types.Begin();
+    else if (compatible_road_types.Count() > 1)
+    {
+        compatible_road_types.Valuate(AIBase.RandItem);
+        compatible_road_types.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+        return compatible_road_types.Begin();
+    }
+
+    // No compatible road type, clear engine list so that all town operations are disabled for a year
+    AILog.Error("No compatible road type to build, will retry in a year.");
+    ::EngineList.Clear();
+
+    return null;
+}
+
+function BuildDepot(town_id)
+{
     local depot_placement_tiles = AITileList();
     local town_location = AITown.GetLocation(town_id);
+
+    local road_type = GetRoadType(town_location);
+    if (road_type == null)
+        return null;
+    AIRoad.SetCurrentRoadType(road_type);
 
     // The rectangle corners must be valid tiles
     local corner1 = town_location - AIMap.GetTileIndex(15, 15);
