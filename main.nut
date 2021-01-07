@@ -160,7 +160,12 @@ function CityLife::HandleEvents()
             // Lost vehicles are sent to the nearest depot (for parade)
             case AIEvent.ET_VEHICLE_LOST:
                 event = AIEventVehicleLost.Convert(event);
-                AIVehicle.SendVehicleToDepot(event.GetVehicleID());
+                local vehicle_id = event.GetVehicleID();
+                for (local order_pos = 0; order_pos < AIOrder.GetOrderCount(vehicle_id); ++order_pos)
+                {
+                    AIOrder.RemoveOrder(vehicle_id, order_pos);
+                }
+                AIVehicle.SendVehicleToDepot(vehicle_id);
                 break;
 
             // On vehicle crash, remove the vehicle from its towns vehicle list
