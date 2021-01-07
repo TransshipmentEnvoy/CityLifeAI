@@ -53,11 +53,22 @@ function RoadBuilder::FindFastestRoadType()
     local road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
     road_types.Valuate(AIRoad.GetMaxSpeed);
 
-    road_types.Sort(AIList.SORT_BY_VALUE, true); // Check for unlimited speed road
-    if (road_types.GetValue(road_types.Begin()) == 0)
-        return road_types.Begin();
+    road_types.Sort(AIList.SORT_BY_VALUE, true); // Check for compatible speed unlimited road
+    local engine = ::EngineList.Begin();
+    foreach (road, speed in road_types) 
+    {
+        if (speed > 0)
+            break;
+        else if (AIEngine.CanRunOnRoad(engine, road))
+            return road;
+    }
 
-    road_types.Sort(AIList.SORT_BY_VALUE, false); // Pick fastest limited speed road
+    road_types.Sort(AIList.SORT_BY_VALUE, false); // Pick fastest compatible speed limited road
+    foreach (road, _ in road_types) {
+        if (AIEngine.CanRunOnRoad(engine, road))
+            return road;
+    }
+
     return road_types.Begin();
 }
 
