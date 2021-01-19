@@ -262,6 +262,7 @@ function CityLife::Save()
     }
     else
     {
+        save_table.duplicit_ai <- this.duplicit_ai;
         foreach (town_id, town in this.towns)
         {
             save_table.town_data_table[town_id] <- town.SaveTownData();
@@ -282,6 +283,7 @@ function CityLife::Load(version, saved_data)
         {
 			::TownDataTable[townid] <- town_data;
 		}
+        this.duplicit_ai = saved_data.duplicit_ai;
     }
     else 
     {
