@@ -16,9 +16,9 @@ class CityLife extends AIInfo {
     function GetDescription()   { return "Builds random cars on your streets if you have a GRF with cars."; }
     function GetVersion()       { return SELF_VERSION; }
     function GetDate()          { return SELF_DATE; }
-    function GetAPIVersion()	{ return "1.10"; }
+    function GetAPIVersion()    { return "1.10"; }
     function GetURL()           { return ""; }
-    function MinVersionToLoad()	{ return SELF_MINLOADVERSION; }
+    function MinVersionToLoad() { return SELF_MINLOADVERSION; }
     function UseAsRandomAI ()   { return false; }
     function CreateInstance()   { return "CityLife"; }
 

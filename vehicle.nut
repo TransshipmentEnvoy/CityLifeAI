@@ -83,13 +83,13 @@ function GetEngineCategory(engine)
     local power = AIEngine.GetPower(engine);
     local effort = AIEngine.GetMaxTractiveEffort(engine);
 
-    // AILog.Info("Engine id: " + engine
-    // 	     + ", name:" + AIEngine.GetName(engine)
-    // 	     + ", weight: " + weight
-    // 	     + ", speed: " + speed
-    // 	     + ", power: " + power
-    // 	     + ", effort: " + effort
-    // 	     );
+    AILog.Info("Engine id: " + engine
+    	     + ", name:" + AIEngine.GetName(engine)
+    	     + ", weight: " + weight
+    	     + ", speed: " + speed
+    	     + ", power: " + power
+    	     + ", effort: " + effort
+    	     );
 
     if (weight == 2 && speed == 127 && power == 100 && effort == 5) 
         return Category.POLICE;
