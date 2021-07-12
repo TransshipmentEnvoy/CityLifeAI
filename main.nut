@@ -35,7 +35,7 @@ class CityLife extends AIController
     constructor() 
     {
         this.load_saved_data = false;
-        this.current_save_version = SELF_VERSION;
+        this.current_save_version = SELF_MAJORVERSION;    // Ensures compatibility between revisions
         this.ai_init_done = false;
         this.duplicit_ai = false;
         this.current_date = 0;

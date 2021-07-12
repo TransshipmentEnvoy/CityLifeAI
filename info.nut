@@ -13,11 +13,11 @@ class CityLife extends AIInfo {
     function GetAuthor()        { return "Firrel"; }
     function GetName()          { return "CityLifeAI"; }
     function GetShortName()     { return "CLAI"; }
-    function GetDescription()   { return "Builds random cars on your streets if you have a GRF with cars."; }
+    function GetDescription()   { return "Populates city with life by adding cars, bikes and service vehicles. Provide good public services to reduce the traffic. Happy cities will grow and connect to nearby towns. Requires newGRF with eyecandy vehicles and GS with ToyLib support."; }
     function GetVersion()       { return SELF_VERSION; }
     function GetDate()          { return SELF_DATE; }
     function GetAPIVersion()    { return "1.10"; }
-    function GetURL()           { return ""; }
+    function GetURL()           { return "https://www.tt-forums.net/viewtopic.php?f=65&t=89121"; }
     function MinVersionToLoad() { return SELF_MINLOADVERSION; }
     function UseAsRandomAI ()   { return false; }
     function CreateInstance()   { return "CityLife"; }

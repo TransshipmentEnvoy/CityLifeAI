@@ -1,3 +1,4 @@
 *** CityLifeAI Changelog ***
 
-Version 1 (2020/)
+Version 1 (2020/07/12)
+* initial release
