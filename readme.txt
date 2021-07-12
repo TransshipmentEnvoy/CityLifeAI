@@ -49,14 +49,15 @@ amount of trees can solve it.
 - SuperLib v. 40, SCPLib v. 45, AIToyLib v. 1 (all available in BaNaNaS
   and OTTD's "Online Content").
 - Any eye candy road vehicle newGRF (with 0 running cost)
+- Game Script which supports GSToyLib (otherwise it will bankrupt fast)
 
 
-4. Recommended newGRFs
+4. Recommended newGRFs and GS
 - Eyecandy Road Vehicles
 - Funny Cars
 - Generic Cars
 - DROP
-
+- Renewed Village Growth
 
 4. License
 CityLifeAI is free software; you can redistribute it and/or
