@@ -13,7 +13,7 @@ from pathlib import Path
 # ----------------------------------
 
 # Game Script name
-gs_name = "CityLifeAI"
+gs_name = "CityLifeAI_Custom"
 
 # ----------------------------------
 
