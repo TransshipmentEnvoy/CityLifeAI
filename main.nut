@@ -25,12 +25,22 @@ class CityLife extends AIController
     current_save_version = null;
     ai_init_done = null;
     duplicit_ai = null;
+
     current_date = null;
 	current_month = null;
 	current_year = null;
+
     toy_lib = null;
+
     towns = null;
+    towns_id = null;
+
     // road_builder = null;
+
+    // param
+    MaxTownNum = null;
+    NetworkRadius = null;
+    MaxVehiclePerTown = null;
 
     constructor()
     {
@@ -46,6 +56,13 @@ class CityLife extends AIController
     } // constructor
 }
 
+function CityLife::LoadParam()
+{
+    this.MaxTownNum = AIController.GetSetting("MaxTownNum");
+    this.NetworkRadius = AIController.GetSetting("NetworkRadius");
+    this.MaxVehiclePerTown = AIController.GetSetting("MaxVehiclePerTown");
+}
+
 function CityLife::Init()
 {
     // Wait for game to start and give time to SCP
@@ -53,6 +70,9 @@ function CityLife::Init()
 
     // Init ToyLib
     this.toy_lib = AIToyLib(null);
+
+    // Load Param
+    this.LoadParam();
 
     // Init time
     local date = AIDate.GetCurrentDate();
@@ -83,8 +103,14 @@ function CityLife::Init()
     CreateEngineList();
 
     // Create the towns list
-	AILog.Info("Create town list ... (can take a while on large maps)");
-	this.towns = this.CreateTownList();
+    if (!this.load_saved_data) {
+        AILog.Info("Create town list ... (can take a while on large maps)");
+        this.CreateTownList();
+    } else {
+        AILog.Info("Loading town list ...");
+        this.LoadTownList();
+    }
+    this.VerboseTownList();
 
     // Ending initialization
 	this.ai_init_done = true;
@@ -98,9 +124,12 @@ function CityLife::Start()
     this.Init();
 
     // Main loop
-    local town_index = 0;
+    local town_id = this.towns_id.Begin();
 	while (true)
     {
+        // Load Params (Update In Game)
+        this.LoadParam();
+
         // Run the daily functions
         local date = AIDate.GetCurrentDate();
         if (date - this.current_date != 0)
@@ -135,8 +164,12 @@ function CityLife::Start()
             this.current_year = year
         }
 
-        this.ManageTown(this.towns[town_index++]);
-        town_index = town_index >= this.towns.len() ? 0 : town_index;
+        this.ManageTown(this.towns[town_id]);
+        town_id = this.towns_id.Next();
+        if (this.towns_id.IsEnd()) {
+            town_id = this.towns_id.Begin();
+        }
+
         // this.ManageRoadBuilder();
     }
 }
@@ -150,11 +183,12 @@ function CityLife::HandleEvents()
         {
 		    // On town founding, add a new town to the list
             case AIEvent.ET_TOWN_FOUNDED:
+                /*
                 event = AIEventTownFounded.Convert(event);
                 local town_id = event.GetTownID();
                 // AILog.Info("New town founded: " + AITown.GetName(town_id));
                 if (AITown.IsValidTown(town_id))
-                    this.towns[town_id] <- Town(town_id, false);
+                    this.towns[town_id] <- Town(town_id, false); */
                 break;
 
             // Lost vehicles are sent to the nearest depot (for parade)
@@ -206,6 +240,10 @@ function CityLife::AskForMoney()
 function CityLife::CreateTownList()
 {
     local towns_list = AITownList();
+    towns_list.Valuate(AITown.GetPopulation);
+    towns_list.Sort(AIList.SORT_BY_VALUE, false);
+    towns_list.KeepTop(this.MaxTownNum);
+
     local towns_array = {};
 
     foreach (t, _ in towns_list)
@@ -213,7 +251,32 @@ function CityLife::CreateTownList()
         towns_array[t] <- Town(t, this.load_saved_data);
 	}
 
-    return towns_array;
+    this.towns = towns_array;
+
+    towns_list.Valuate(function(_){return 0;});
+    this.towns_id = towns_list;
+}
+
+function CityLife::LoadTownList()
+{
+    this.towns = {};
+    this.towns_id = AIList();
+
+    foreach (t in ::TownDataTable) {
+        this.towns[t] <- Town(t, this.load_saved_data);
+        this.towns_id.AddItem(t, 0);
+    }
+
+    AIController.Break("x")
+}
+
+function CityLife::VerboseTownList()
+{
+    foreach (t, _ in this.towns_id) {
+        local name = AITown.GetName(t);
+        local population = AITown.GetPopulation(t);
+        AILog.Info("Service " + name + " (" + population + ")");
+    }
 }
 
 function CityLife::MonthlyManageTowns()
@@ -226,7 +289,7 @@ function CityLife::MonthlyManageTowns()
 
 function CityLife::ManageTown(town)
 {
-    town.ManageTown();
+    town.ManageTown(this.MaxVehiclePerTown);
 }
 
 /*

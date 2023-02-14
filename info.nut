@@ -56,6 +56,42 @@ class CityLife extends AIInfo {
 
     function GetSettings() {
         AddSetting({
+            name = "MaxTownNum",
+            description = "The maximum town number this AI will service",
+            easy_value = 30,
+            medium_value = 30,
+            hard_value = 30,
+            custom_value = 30,
+            flags = CONFIG_INGAME,
+            step_size = 1,
+            min_value = 0,
+            max_value = 100
+        });
+        AddSetting({
+            name = "MaxVehiclePerTown",
+            description = "The maximum vehicle per town per service",
+            easy_value = 50,
+            medium_value = 50,
+            hard_value = 50,
+            custom_value = 50,
+            flags = CONFIG_INGAME,
+            step_size = 1,
+            min_value = 0,
+            max_value = 100
+        });
+        AddSetting({
+            name = "NetworkRadius",
+            description = "The maximum radius of the road network this AI will build",
+            easy_value = 960,
+            medium_value = 960,
+            hard_value = 960,
+            custom_value = 960,
+            flags = CONFIG_INGAME,
+            step_size = 64,
+            min_value = 64,
+            max_value = 4096
+        });
+        AddSetting({
             name = "debug_signs",
             description = "Debug: Build signs",
             easy_value = 0,

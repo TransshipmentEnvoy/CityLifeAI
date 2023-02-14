@@ -60,13 +60,13 @@ function BuildDepot(town_id)
     AIRoad.SetCurrentRoadType(road_type);
 
     // The rectangle corners must be valid tiles
-    local corner1 = town_location - AIMap.GetTileIndex(15, 15);
-    while(!AIMap.IsValidTile(corner1) || AIMap.DistanceManhattan(corner1, town_location) > 30) {
+    local corner1 = town_location - AIMap.GetTileIndex(25, 25);
+    while(!AIMap.IsValidTile(corner1) || AIMap.DistanceManhattan(corner1, town_location) > 50) {
         corner1 += AIMap.GetTileIndex(1, 1);
     }
 
-    local corner2 = town_location + AIMap.GetTileIndex(15, 15);
-    while(!AIMap.IsValidTile(corner2) || AIMap.DistanceManhattan(corner2, town_location) > 30) {
+    local corner2 = town_location + AIMap.GetTileIndex(25, 25);
+    while(!AIMap.IsValidTile(corner2) || AIMap.DistanceManhattan(corner2, town_location) > 50) {
         corner2 -= AIMap.GetTileIndex(1, 1);
     }
 
@@ -108,9 +108,11 @@ function BuildDepot(town_id)
                         || AIError.GetLastError() == AIError.ERR_AREA_NOT_CLEAR
                         || AIError.GetLastError() == AIRoad.ERR_ROAD_ONE_WAY_ROADS_CANNOT_HAVE_JUNCTIONS
                         || AIError.GetLastError() == AIRoad.ERR_ROAD_WORKS_IN_PROGRESS
-                        || AIError.GetLastError() == AIError.ERR_VEHICLE_IN_THE_WAY))
+                        || AIError.GetLastError() == AIError.ERR_VEHICLE_IN_THE_WAY
+                        || AIError.GetLastError() == AITunnel.ERR_TUNNEL_CANNOT_BUILD_ON_WATER))
                 {
                     AILog.Warning("Build road :: Tile " + depot_tile + ": " + AIError.GetLastErrorString());
+                    // AISign.BuildSign(depot_tile, "tilexx");
                     return null;
                 }
             }

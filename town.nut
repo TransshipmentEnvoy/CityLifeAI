@@ -13,7 +13,7 @@ class Town
     depot = null;                   // Built depo
     vehicle_group = null;           // Group ID of this town vehicles
     vehicle_list = null;            // List of owned vehicles
-    population = null;              // Monthly population count 
+    population = null;              // Monthly population count
     pax_transported = null;         // Monthly percentage of transported pax
     mail_transported = null;        // Monthly percentage of transported mail
     connections = null;             // List of established road connections
@@ -81,7 +81,7 @@ function Town::SaveTownData()
     return town_data;
 }
 
-function Town::ManageTown()
+function Town::ManageTown(max_veh)
 {
     if (::EngineList.Count() == 0)
         return;
@@ -95,27 +95,45 @@ function Town::ManageTown()
     {
         if (::EngineList.Count() > 0 || vehicle_list.len() > 0)
         {
-            local personal_count = ceil(this.population / 100.0 * this.CalculateVehicleCountDecrease(this.pax_transported, 30));
+            // AILog.Info("pop: " + this.population)
+
+            local personal_count = ceil(this.population / 4000.0 * this.CalculateVehicleCountDecrease(this.pax_transported, 0, 100));
+            local service_count = ceil(this.population / 12000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 10, 60));
+            if (service_count > max_veh) {
+                service_count = max_veh;
+            }
+            local emergency_count = ceil((this.population - 10000.0) / 60000.0) * 3;
+            if (emergency_count > max_veh) {
+                emergency_count = max_veh;
+            }
+
+            // AILog.Info("p: " + personal_count)
+            // AILog.Info("s: " + service_count)
+            // AILog.Info("e: " + emergency_count)
 
             if (GetEngineListByCategory(Category.MAIL | Category.GARBAGE).Count() > 0)
             {
-                local service_count = ceil(this.population / 500.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 30, 80));
                 this.ManageVehiclesByCategory(service_count, Category.MAIL | Category.GARBAGE);
             }
             else
             {
-                personal_count += ceil(this.population / 500.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 30, 80));
+                personal_count += service_count;
             }
 
             if (GetEngineListByCategory(Category.FIRE | Category.POLICE | Category.AMBULANCE).Count() > 0)
             {
-                local emergency_count = ceil((this.population - 1000.0) / 2000.0) * 3;
                 this.ManageVehiclesByCategory(emergency_count, Category.FIRE | Category.POLICE | Category.AMBULANCE);
             }
             else
             {
-                personal_count += ceil((this.population - 1000.0) / 2000.0) * 3;
+                personal_count +=  emergency_count;
             }
+
+            if(personal_count > max_veh) {
+                personal_count = max_veh;
+            }
+
+            // AILog.Info("p: " + personal_count)
 
             this.ManageVehiclesByCategory(personal_count, Category.CAR);
             this.UpdateVehicles();
@@ -126,7 +144,7 @@ function Town::ManageTown()
 function Town::MonthlyManageTown()
 {
     local population = AITown.GetPopulation(this.id);
-    this.population = population > 10000 ? 10000 : population;
+    this.population = population > 500000 ? 500000 : population;
     this.pax_transported = AITown.GetLastMonthTransportedPercentage(this.id, 0x00);
 	this.mail_transported = AITown.GetLastMonthTransportedPercentage(this.id, 0x02);
 
