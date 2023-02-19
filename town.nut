@@ -16,7 +16,8 @@ class Town
     population = null;              // Monthly population count
     pax_transported = null;         // Monthly percentage of transported pax
     mail_transported = null;        // Monthly percentage of transported mail
-    connections = null;             // List of established road connections
+    connection_status = null;       // List of in range towns & status
+    network_radius = null;          // radius
 
     constructor(town_id, load_town_data=false)
     {
@@ -28,7 +29,7 @@ class Town
 		 */
         if (!load_town_data)
         {
-            this.connections = [];
+            this.connection_status = {};
             this.vehicle_list = [];
             this.vehicle_group = AIGroup.CreateGroup(AIVehicle.VT_ROAD, AIGroup.GROUP_INVALID);
             AIGroup.SetName(this.vehicle_group, AITown.GetName(this.id));
@@ -37,7 +38,7 @@ class Town
         {
             this.depot = ::TownDataTable[this.id].depot;
             this.vehicle_group = ::TownDataTable[this.id].vehicle_group;
-            this.connections = ::TownDataTable[this.id].connections;
+            this.connection_status = ::TownDataTable[this.id].connection_status;
 
             // Recreate list of vehicles from group information
             if (AIGroup.IsValidGroup(this.vehicle_group))
@@ -68,7 +69,7 @@ function Town::SaveTownData()
     local town_data = {};
     town_data.depot <- this.depot;
     town_data.vehicle_group <- this.vehicle_group;
-    town_data.connections <- this.connections;
+    town_data.connection_status <- this.connection_status;
 
     local sell_vehicles = [];
     foreach (vehicle in this.vehicle_list)
@@ -247,6 +248,7 @@ function Town::RemoveVehicle(vehicle_id)
     return false;
 }
 
+/*
 function Town::Parade(town_b)
 {
     local company_vehicles_count = AIVehicleList().Count();
@@ -280,4 +282,32 @@ function Town::Parade(town_b)
         if (engine_list.IsEnd())
             engine = engine_list.Begin();
     }
+}
+*/
+
+function Town::ScanRegion(network_radius)
+{
+    // update network_radius
+    this.network_radius = network_radius;
+
+    // fill in connection_status
+    local townlist = AITownList();
+    local this_pos = AITown.GetLocation(this.id);
+    townlist.Valuate(AITown.GetDistanceManhattanToTile, this_pos);
+    townlist.KeepBelowValue(this.network_radius);
+    townlist.Sort(AIList.SORT_BY_VALUE, true);
+    foreach (t, _ in townlist) {
+        if (!(t in this.connection_status)) {
+            if (t == this.id) {
+                this.connection_status[t] <- true; // always connect to self
+            } else {
+                this.connection_status[t] <- false;
+            }
+        }
+    }
+
+    // foreach (t, st in this.connection_status) {
+    //     AILog.Info("    " + AITown.GetName(t) + ":" + st)
+    // }
+    // AILog.Info("---")
 }
