@@ -40,7 +40,7 @@ function RoadBuilder::Init(towns, towns_id)
     this.road_type = this.FindFastestRoadType();
     this.pathfinder.InitializePath([AITown.GetLocation(this.town_a)], [AITown.GetLocation(this.town_b)], true);
     this.pathfinder.SetMaxIterations(5000000);
-    this.pathfinder.SetStepSize(50);
+    this.pathfinder.SetStepSize(100);
     this.status = PathfinderStatus.RUNNING;
 
     AILog.Info("Planning road between " + AITown.GetName(this.town_a) + " and " + AITown.GetName(this.town_b));

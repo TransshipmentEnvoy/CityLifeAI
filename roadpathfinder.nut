@@ -321,12 +321,13 @@ function CityLifeAI_RoadPathFinder::InitializePath(sources, goals, repair_existi
     this._pf.cost.no_existing_road = repair_existing? 300 : 60; // default = 40
     this._pf.cost.tile = 80; // default = 100
     this._pf.cost.max_bridge_length = 15; // default = 10
+    this._pf.cost.bridge_per_tile = 200; //150;
+    this._pf.cost.tunnel_per_tile = 150; //120;
 
     // Set maximum cost as some constant plus a factor times the cost of the optimal path to avoid to long detours
     // factor = 5/2 aka 2,5
     this._pf.cost.max_cost = 100000 + (this._pf.cost.tile * AIMap.DistanceManhattan(sources[0], goals[0]) * 50) + this._pf.cost.turn * 20;
     AILog.Info("max cost: " + this._pf.cost.max_cost);
-
 
     this.max_iterations = null;
     this.step_size = null;
