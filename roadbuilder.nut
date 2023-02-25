@@ -191,20 +191,20 @@ function RoadBuilder::BuildRoad(towns)
                         if (!result && !AIError.GetLastError() == AIRoad.ERR_UNSUITABLE_ROAD) {
                             AILog.Info("Upgrade road error: " + AIError.GetLastErrorString());
                         }
-                    } else {
-                        // Build road
-                        local result = false;
-                        while (!result)
-                        {
-                            result = AIRoad.BuildRoad(path_t, t);
-                            if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
-                                break;
-                        }
+                    }
 
-                        if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
-                            AILog.Info("Build road error: " + AIError.GetLastErrorString());
-                            AIController.Break("debug")
-                        }
+                    // Build road
+                    local result = false;
+                    while (!result)
+                    {
+                        result = AIRoad.BuildRoad(path_t, t);
+                        if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
+                            break;
+                    }
+
+                    if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
+                        AILog.Info("Build road error: " + AIError.GetLastErrorString());
+                        AIController.Break("debug")
                     }
                 }
             } else {
