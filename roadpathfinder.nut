@@ -328,7 +328,7 @@ function CityLifeAI_RoadPathFinder::InitializePath(sources, goals, repair_existi
     // Set maximum cost as some constant plus a factor times the cost of the optimal path to avoid to long detours
     // factor = 5/2 aka 2,5
     this._pf.cost.max_cost = 100000 + (this._pf.cost.tile * AIMap.DistanceManhattan(sources[0], goals[0]) * 50) + this._pf.cost.turn * 20;
-    AILog.Info("max cost: " + this._pf.cost.max_cost);
+    // AILog.Info("max cost: " + this._pf.cost.max_cost);
 
     this.max_iterations = null;
     this.step_size = null;
