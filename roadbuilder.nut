@@ -198,8 +198,10 @@ function RoadBuilder::BuildRoad(towns)
                             break;
                     }
 
-                    if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT)
+                    if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
                         AILog.Info("Build road error: " + AIError.GetLastErrorString());
+                        AIController.Break("debug")
+                    }
                 }
             } else {
                 if (AIBridge.IsBridgeTile(this.path.GetTile())) {
@@ -258,10 +260,10 @@ function RoadBuilder::BuildRoad(towns)
                             AILog.Info("Build tunnel error: " + AIError.GetLastErrorString());
                         }
                     } else {
-                        local bridge_list = AIBridgeList_Length(AIMap.DistanceManhattan(this.path.GetTile(), par.GetTile()) +1);
-                        bridge_list.Valuate(AIBridge.GetMaxSpeed);
-                        bridge_list.KeepAboveValue(100);
+                        local bridge_length_request = AIMap.DistanceManhattan(this.path.GetTile(), par.GetTile()) +1
+                        local bridge_list = GetBridgeType(bridge_length_request);
 
+                        // select random bridge
                         bridge_list.Valuate(AIBase.RandItem);
                         bridge_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 
@@ -326,6 +328,29 @@ function GetRoadType(location)
     ::EngineList.Clear();
 
     return null;
+}
+
+function GetBridgeType(length)
+{
+    local bridge_list = AIBridgeList_Length(length);
+
+    // filter out undesired bridges
+
+    // speed filter bridge
+    bridge_list.Valuate(AIBridge.GetMaxSpeed);
+
+    local has_fast_speed_bridge = false;
+    foreach (b, speed in bridge_list) {
+        if (speed > 100) {
+            has_fast_speed_bridge = true;
+            break;
+        }
+    }
+    if (has_fast_speed_bridge) {
+        bridge_list.KeepAboveValue(100);
+    }
+
+    return bridge_list
 }
 
 function BuildDepot(town_id)
