@@ -265,9 +265,9 @@ function CityLife::LoadTownList()
     this.towns = {};
     this.towns_id = AIList();
 
-    foreach (t in ::TownDataTable) {
+    foreach (t, _ in ::TownDataTable) {
         this.towns[t] <- Town(t, this.load_saved_data);
-        this.towns[t].ScanRegion(this.NetworkRadius);
+        // this.towns[t].ScanRegion(this.NetworkRadius);
         this.towns_id.AddItem(t, 0);
     }
 
