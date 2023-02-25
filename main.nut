@@ -46,6 +46,9 @@ class CityLife extends AIController
     NetworkRadius = null;
     MaxVehiclePerTown = null;
 
+    // me
+    Me = null;
+
     constructor()
     {
         this.load_saved_data = false;
@@ -57,6 +60,8 @@ class CityLife extends AIController
         this.current_year = 0;
         this.road_builder = RoadBuilder();
         ::TownDataTable <- {};
+
+        this.Me = AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
     } // constructor
 }
 
@@ -184,6 +189,7 @@ function CityLife::Start()
                     // TODO: switch to a new epoch
                 }
                 this.roadtype = roadtype;
+                AIRoad.SetCurrentRoadType(this.roadtype);
             }
 
             this.current_year = year
@@ -325,7 +331,7 @@ function CityLife::MonthlyManageRoadBuilder()
     if (this.duplicit_ai)
         return;
 
-    this.road_builder.Init(this.towns, this.towns_id);
+    this.road_builder.Init(this.towns, this.towns_id, this.roadtype);
 }
 
 function CityLife::ManageRoadBuilder()

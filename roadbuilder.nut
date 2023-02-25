@@ -19,17 +19,21 @@ class RoadBuilder
     pathfinder = null;
     town_a = null;
     town_b = null;
-    road_type = null;
+    roadtype = null;
     path = null;
+
+    Me = null;
 
     constructor()
     {
         this.pathfinder =  RoadPathFinder();
         this.status = PathfinderStatus.IDLE;
+
+        this.Me = AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
     }
 }
 
-function RoadBuilder::Init(towns, towns_id)
+function RoadBuilder::Init(towns, towns_id, roadtype)
 {
     if (this.status != PathfinderStatus.IDLE)
         return false;
@@ -37,7 +41,7 @@ function RoadBuilder::Init(towns, towns_id)
     if (!this.FindTownsToConnect(towns, towns_id))
         return false;
 
-    this.road_type = this.FindFastestRoadType();
+    this.roadtype = roadtype;
     this.pathfinder.InitializePath([AITown.GetLocation(this.town_a)], [AITown.GetLocation(this.town_b)], true);
     this.pathfinder.SetMaxIterations(5000000);
     this.pathfinder.SetStepSize(100);
@@ -47,6 +51,7 @@ function RoadBuilder::Init(towns, towns_id)
     return true;
 }
 
+/*
 function RoadBuilder::FindFastestRoadType()
 {
     local road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
@@ -70,6 +75,7 @@ function RoadBuilder::FindFastestRoadType()
 
     return road_types.Begin();
 }
+*/
 
 function RoadBuilder::FindTownsToConnect(towns, towns_id)
 {
@@ -123,7 +129,7 @@ function RoadBuilder::FindPath(towns)
     if (this.status != PathfinderStatus.RUNNING)
         return false;
 
-    AIRoad.SetCurrentRoadType(this.road_type);
+    AIRoad.SetCurrentRoadType(this.roadtype);
 
     this.path = this.pathfinder.FindPath();
     if (this.path == null)
@@ -172,35 +178,33 @@ function RoadBuilder::BuildRoad(towns)
                     }
 
                 } else {
+                    local path_t = this.path.GetTile();
+                    local t = par.GetTile();
+                    if (AIRoad.IsRoadTile(t) && AITile.GetOwner(t) == this.Me) {
+                        // Upgrade road
+                        local result = false;
+                        while (!result) {
+                            result = AIRoad.ConvertRoadType(path_t, t, AIRoad.GetCurrentRoadType());
+                            if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
+                                break;
+                        }
+                        if (!result && !AIError.GetLastError() == AIError.ERR_UNSUITABLE_ROAD) {
+                            AILog.Info("Upgrade road error: " + AIError.GetLastErrorString());
+                        }
+                    } else {
+                        // Build road
+                        local result = false;
+                        while (!result)
+                        {
+                            result = AIRoad.BuildRoad(path_t, t);
+                            if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
+                                break;
+                        }
 
-                    /* Look for longest straight road and build it as one build command */
-                    local straight_begin = this.path;
-                    local straight_end = par;
-
-                    local prev = straight_end.GetParent();
-                    while(prev != null &&
-                            SuperLib.Tile.IsStraight(straight_begin.GetTile(), prev.GetTile()) &&
-                            AIMap.DistanceManhattan(straight_end.GetTile(), prev.GetTile()) == 1)
-                    {
-                        straight_end = prev;
-                        prev = straight_end.GetParent();
-                    }
-
-                    /* update the looping vars. (this.path is set to par in the end of the main loop) */
-                    par = straight_end;
-
-                    // Build road
-                    local result = false;
-                    while (!result)
-                    {
-                        result = AIRoad.BuildRoad(straight_begin.GetTile(), straight_end.GetTile());
-                        if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
-                            break;
-                    }
-
-                    if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
-                        AILog.Info("Build road error: " + AIError.GetLastErrorString());
-                        AIController.Break("debug")
+                        if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
+                            AILog.Info("Build road error: " + AIError.GetLastErrorString());
+                            AIController.Break("debug")
+                        }
                     }
                 }
             } else {
@@ -332,8 +336,8 @@ function GetRoadType()
 
     // Get the default road for an engine type and check if it is available to the AI
     local engine = ::EngineList.Begin();
-    if (AIRoad.IsRoadTypeAvailable(AIEngine.GetRoadType(engine)))
-        return AIEngine.GetRoadType(engine);
+    /* if (AIRoad.IsRoadTypeAvailable(AIEngine.GetRoadType(engine)))
+        return AIEngine.GetRoadType(engine); */
 
     // Filter roads to only those that are compatible to an engine and randomly chose one
     local compatible_road_types = AIList();
@@ -364,8 +368,8 @@ function GetRoadType()
                 candidate_list.AddItem(r, 0);
             }
         }
-        candidate_list.Valuate(AIBase.RandItem);
-        candidate_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
+        candidate_list.Valuate(AIRoad.GetBuildCost, AIRoad.BT_ROAD);
+        candidate_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
         return candidate_list.Begin();
     }
 
