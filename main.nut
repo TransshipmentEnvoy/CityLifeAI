@@ -34,6 +34,8 @@ class CityLife extends AIController
 
     toy_lib = null;
 
+    roadtype = null;
+
     towns = null;
     towns_id = null;
 
@@ -96,6 +98,8 @@ function CityLife::Init()
             }
         }
 
+        // Set company color
+
         // Enable automatic renewal of vehicles
         AICompany.SetAutoRenewStatus(true);
         AICompany.SetAutoRenewMonths(1);
@@ -113,6 +117,15 @@ function CityLife::Init()
         this.LoadTownList();
     }
     this.VerboseTownList();
+
+    // road type
+    if (!this.load_saved_data) {
+        this.roadtype = GetRoadType();
+    }
+    if (this.roadtype != null) {
+        AILog.Info("Select Road Type: " + AIRoad.GetName(this.roadtype));
+        AIRoad.SetCurrentRoadType(this.roadtype);
+    }
 
     // Ending initialization
 	this.ai_init_done = true;
@@ -163,15 +176,27 @@ function CityLife::Start()
 
             CreateEngineList();
 
+            // update road type
+            local roadtype = GetRoadType();
+            if (roadtype != null) {
+                if (roadtype != this.roadtype) {
+                    AILog.Info("New road type: " + AIRoad.GetName(roadtype) + "  => Switch to new epoch");
+                    // TODO: switch to a new epoch
+                }
+                this.roadtype = roadtype;
+            }
+
             this.current_year = year
         }
 
+        // town
         this.ManageTown(this.towns[town_id]);
         town_id = this.towns_id.Next();
         if (this.towns_id.IsEnd()) {
             town_id = this.towns_id.Begin();
         }
 
+        // road
         this.ManageRoadBuilder();
     }
 }
@@ -270,8 +295,6 @@ function CityLife::LoadTownList()
         // this.towns[t].ScanRegion(this.NetworkRadius);
         this.towns_id.AddItem(t, 0);
     }
-
-    AIController.Break("x")
 }
 
 function CityLife::VerboseTownList()
@@ -332,6 +355,7 @@ function CityLife::Save()
     else
     {
         save_table.duplicit_ai <- this.duplicit_ai;
+        save_table.roadtype <- this.roadtype;
         foreach (town_id, town in this.towns)
         {
             save_table.town_data_table[town_id] <- town.SaveTownData();
@@ -353,6 +377,7 @@ function CityLife::Load(version, saved_data)
 			::TownDataTable[townid] <- town_data;
 		}
         this.duplicit_ai = saved_data.duplicit_ai;
+        this.roadtype = saved_data.roadtype;
     }
     else
     {
