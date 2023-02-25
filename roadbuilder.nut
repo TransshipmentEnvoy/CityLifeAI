@@ -17,6 +17,7 @@ class RoadBuilder
 {
     status = null;
     pathfinder = null;
+    town_center = null;
     town_a = null;
     town_b = null;
     roadtype = null;
@@ -82,6 +83,7 @@ function RoadBuilder::FindTownsToConnect(towns, towns_id)
     // random sample in towns
     towns_id.Valuate(AIBase.RandItem);
     local center_town_id = towns_id.Begin();
+    this.town_center = center_town_id;
     local center_town = towns[center_town_id];
     local center_town_pos = AITown.GetLocation(center_town_id);
 
@@ -290,6 +292,9 @@ function RoadBuilder::BuildRoad(towns)
 
     this.status = PathfinderStatus.IDLE;
     AILog.Info("Path between " + AITown.GetName(this.town_a) + " and " + AITown.GetName(this.town_b) + " built");
+
+    // assign to town connection status
+    towns[this.town_center].connection_status[this.town_a] = true;
 }
 
 

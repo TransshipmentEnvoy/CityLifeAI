@@ -189,7 +189,8 @@ function CityLife::Start()
             if (roadtype != null) {
                 if (roadtype != this.roadtype) {
                     AILog.Info("New road type: " + AIRoad.GetName(roadtype) + "  => Switch to new epoch");
-                    // TODO: switch to a new epoch
+                    // switch to a new epoch
+                    SwitchToNewEpoch();
                 }
                 this.roadtype = roadtype;
                 AIRoad.SetCurrentRoadType(this.roadtype);
@@ -343,6 +344,18 @@ function CityLife::ManageRoadBuilder()
     {
         this.road_builder.BuildRoad(this.towns);
         // this.towns[this.road_builder.town_a].Parade(this.towns[this.road_builder.town_b]);
+    }
+}
+
+function CityLife::SwitchToNewEpoch()
+{
+    foreach (town_id, town in this.towns) {
+        foreach (alt_town_id, status in town.connection_status) {
+            if (alt_town_id == town_id) {
+                continue;
+            }
+            town.connection_status[alt_town_id] = false;
+        }
     }
 }
 
