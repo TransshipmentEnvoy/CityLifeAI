@@ -188,7 +188,7 @@ function RoadBuilder::BuildRoad(towns)
                             if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
                                 break;
                         }
-                        if (!result && !AIError.GetLastError() == AIError.ERR_UNSUITABLE_ROAD) {
+                        if (!result && !AIError.GetLastError() == AIRoad.ERR_UNSUITABLE_ROAD) {
                             AILog.Info("Upgrade road error: " + AIError.GetLastErrorString());
                         }
                     } else {
