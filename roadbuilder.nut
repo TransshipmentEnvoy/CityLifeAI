@@ -177,7 +177,6 @@ function RoadBuilder::BuildRoad(towns)
                         }
                     }
 
-                } else {
                     local path_t = this.path.GetTile();
                     local t = par.GetTile();
                     if (AIRoad.IsRoadTile(t) && AITile.GetOwner(t) == this.Me) {
@@ -193,11 +192,12 @@ function RoadBuilder::BuildRoad(towns)
                         }
                     }
 
+                } else {
                     // Build road
                     local result = false;
                     while (!result)
                     {
-                        result = AIRoad.BuildRoad(path_t, t);
+                        result = AIRoad.BuildRoad(this.path.GetTile(), par.GetTile());
                         if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
                             break;
                     }
