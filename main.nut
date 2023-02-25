@@ -103,7 +103,9 @@ function CityLife::Init()
             }
         }
 
-        // Set company color
+        // Set company color (if fails, use default asignment)
+        AICompany.SetPrimaryLiveryColour(AICompany.LS_DEFAULT, AICompany.COLOUR_GREY);
+        AICompany.SetPrimaryLiveryColour(AICompany.LS_DEFAULT, AICompany.COLOUR_GREY);
 
         // Enable automatic renewal of vehicles
         AICompany.SetAutoRenewStatus(true);
