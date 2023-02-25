@@ -1,7 +1,7 @@
-1. save load ai (important)
+1. [x] save load ai (important)
 2. [x] upgrade roads
 3. interleave duplicit_ai
 4. [x] 1750 start compat
-5. select gray as default color if possible
+5. [x] select gray as default color if possible
 6. handle new town event
-7. epoch to restart upgrade road
+7. [x] epoch to restart upgrade road
