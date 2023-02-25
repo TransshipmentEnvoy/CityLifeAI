@@ -3,3 +3,4 @@
 3. interleave duplicit_ai
 4. 1750 start compat
 5. select gray as default color if possible
+6. handle new town event
