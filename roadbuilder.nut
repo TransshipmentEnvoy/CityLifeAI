@@ -291,8 +291,29 @@ function RoadBuilder::BuildRoad(towns)
 
 function GetRoadType(location)
 {
-    local road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
+    local ignore_road_table = {}
+    ignore_road_table["ISR Style paved driveway"] <- 0;
+    ignore_road_table["CHIPS Style asphalt driveway"] <- 0;
+    ignore_road_table["CHIPS Style cobble driveway"] <- 0;
+    ignore_road_table["CHIPS Style mud driveway"] <- 0;
     local dummy = AITestMode();
+
+    // Filter out the road not desired
+    local _road_types = AIRoadTypeList(AIRoad.ROADTRAMTYPES_ROAD);
+    local road_types = AIList();
+    foreach (r, _ in _road_types) {
+        if ("IsCatenaryRoadType" in AIRoad) {
+            if (AIRoad.IsCatenaryRoadType(r)) {
+                continue;
+            }
+        }
+
+        if (AIRoad.GetName(r) in ignore_road_table) {
+            continue;
+        }
+
+        AILog.Info(AIRoad.GetName(r));
+    }
 
     // Check if the road type at the location is usable
     foreach (road, _ in road_types)
@@ -349,6 +370,8 @@ function GetBridgeType(length)
     if (has_fast_speed_bridge) {
         bridge_list.KeepAboveValue(100);
     }
+
+    AIController.Break("x");
 
     return bridge_list
 }
