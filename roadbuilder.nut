@@ -206,7 +206,7 @@ function RoadBuilder::BuildRoad(towns)
 
                     if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
                         AILog.Info("Build road error: " + AIError.GetLastErrorString());
-                        AIController.Break("debug")
+                        // AIController.Break("debug")
                     }
                 }
             } else {
