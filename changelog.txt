@@ -1,4 +1,26 @@
 *** CityLifeAI Changelog ***
 
+Version 3 (2024/10/06)
+- mod: Merged changes of v2.4 into v1
+- new: Parameter to control car density
+- new: Parameters to obsolete slow cars (horses)
+- new: Cars are bought sequentially several per town to spread them more evenly
+- fix: Updated AIToyLib
+- rem: Road building
+
+Version 2.4 by WalkedBy (2021/10/10)
+* ton of excessive unnecessary computations for Candy AI, makes 1.0 version unusable and blocks in game rewind
+* buggy road building (bridges everywhere) which really should be optional
+* AI/map car uncontrollable increase was possible because amount of cars was increasing lineary with city sizes
+* candy cars are not updated with time, 1820 cars will stay all game up to 2100 and will block city traffic
+* AI/map car overflow is prevented by using square root of population instead of linear steady grow
+* some questionable calls removed from AI main loop to yearly/monthly/daily schedule
+* AI will not try to build depots all game, only once
+* all road building anyway not working and disabled, less safe part of script better be optional
+* a bit more safety with small clean-ups and unnecessary while's replaced with for's
+* numbers are adjusted for huge maps, i.e. slightly less density of cars per city
+* added garbage truck (classic) other type
+* (reupload 2.3) bugfix which prevented obsolete cars from updating without game save/load, should work fluently now in server mode
+
 Version 1 (2020/07/12)
 * initial release

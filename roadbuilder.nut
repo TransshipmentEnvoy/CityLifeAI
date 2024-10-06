@@ -36,7 +36,7 @@ function RoadBuilder::Init(towns)
 
     if (!this.FindTownsToConnect(towns))
         return false;
-    
+
     this.road_type = this.FindFastestRoadType();
 
     this.pathfinder.InitializePath([AITown.GetLocation(this.town_a)], [AITown.GetLocation(this.town_b)], true);
@@ -55,7 +55,7 @@ function RoadBuilder::FindFastestRoadType()
 
     road_types.Sort(AIList.SORT_BY_VALUE, true); // Check for compatible speed unlimited road
     local engine = ::EngineList.Begin();
-    foreach (road, speed in road_types) 
+    foreach (road, speed in road_types)
     {
         if (speed > 0)
             break;
@@ -161,9 +161,9 @@ function RoadBuilder::BuildRoad(towns)
 		if (par != null) {
 			local last_node = this.path.GetTile();
 
-			if (AIMap.DistanceManhattan(this.path.GetTile(), par.GetTile()) == 1 ) 
+			if (AIMap.DistanceManhattan(this.path.GetTile(), par.GetTile()) == 1 )
             {
-				if (AIRoad.AreRoadTilesConnected(this.path.GetTile(), par.GetTile())) 
+				if (AIRoad.AreRoadTilesConnected(this.path.GetTile(), par.GetTile()))
                 {
 					if (AITile.HasTransportType(par.GetTile(), AITile.TRANSPORT_RAIL))
 					{
@@ -175,7 +175,7 @@ function RoadBuilder::BuildRoad(towns)
 							{
 								new_par = new_par.GetParent();
 							}
-							
+
 							par = new_par;
 						}
 						else
@@ -191,7 +191,7 @@ function RoadBuilder::BuildRoad(towns)
 					local straight_end = par;
 
                     local prev = straight_end.GetParent();
-                    while(prev != null && 
+                    while(prev != null &&
                             SuperLib.Tile.IsStraight(straight_begin.GetTile(), prev.GetTile()) &&
                             AIMap.DistanceManhattan(straight_end.GetTile(), prev.GetTile()) == 1)
                     {
@@ -253,13 +253,13 @@ function RoadBuilder::BuildRoad(towns)
 
 				} else if(AITunnel.IsTunnelTile(this.path.GetTile())) {
 					/* A tunnel exists */
-					
+
 					// All tunnels have equal speed so nothing to do
 				} else {
 					/* Build a bridge or tunnel. */
 
 					/* If it was a road tile, demolish it first. Do this to work around expended roadbits. */
-					if (AIRoad.IsRoadTile(this.path.GetTile()) && 
+					if (AIRoad.IsRoadTile(this.path.GetTile()) &&
 							!AIRoad.IsRoadStationTile(this.path.GetTile()) &&
 							!AIRoad.IsRoadDepotTile(this.path.GetTile())) {
 						AITile.DemolishTile(this.path.GetTile());
@@ -307,7 +307,7 @@ function GetRoadType(location)
     local dummy = AITestMode();
 
     // Check if the road type at the location is usable
-    foreach (road, _ in road_types) 
+    foreach (road, _ in road_types)
     {
         if (!AIRoad.ConvertRoadType(location, location, road) && AIError.GetLastError() == AIRoad.ERR_UNSUITABLE_ROAD)
             return road;
@@ -348,8 +348,10 @@ function BuildDepot(town_id)
     local town_location = AITown.GetLocation(town_id);
 
     local road_type = GetRoadType(town_location);
-    if (road_type == null)
+    if (road_type == null) {
+        AILog.Warning(AITown.GetName(town_id) + ": Could not detect town road type");
         return null;
+    }
     AIRoad.SetCurrentRoadType(road_type);
 
     // The rectangle corners must be valid tiles
@@ -379,19 +381,19 @@ function BuildDepot(town_id)
     while(!depot_placement_tiles.IsEnd()) {
         foreach (direction in directions)
         {
-            if (!AIRoad.IsRoadTile(depot_tile + direction)) 
+            if (!AIRoad.IsRoadTile(depot_tile + direction))
             {
                 continue;
             }
 
-            if (AIRoad.CanBuildConnectedRoadPartsHere(depot_tile, depot_tile + direction, depot_tile + direction + 1)) 
+            if (AIRoad.CanBuildConnectedRoadPartsHere(depot_tile, depot_tile + direction, depot_tile + direction + 1))
             {
                 if (AIRoad.BuildRoad(depot_tile, depot_tile + direction) || AIError.GetLastError() == AIError.ERR_ALREADY_BUILT)
                 {
                     if (AIRoad.BuildRoadDepot(depot_tile, depot_tile + direction))
                         return depot_tile;
                     else if (!(AIError.GetLastError() == AIError.ERR_FLAT_LAND_REQUIRED
-                            || AIError.GetLastError() == AIError.ERR_AREA_NOT_CLEAR)) 
+                            || AIError.GetLastError() == AIError.ERR_AREA_NOT_CLEAR))
                     {
                         AILog.Warning("Build depot :: Tile " + depot_tile + ": " + AIError.GetLastErrorString());
                         return null;

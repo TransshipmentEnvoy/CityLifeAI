@@ -3,7 +3,7 @@
                 *      An AI for OpenTTD     *
                 ******************************
 
-Version: 1
+Version: 3.0
 
 Usefull URL's:
 - forum topic: https://www.tt-forums.net/viewtopic.php?f=65&t=89121
@@ -45,19 +45,24 @@ amount of trees can solve it.
 
 
 3. Requirements
-- OpenTTD, v. 1.10.x or newer.
-- SuperLib v. 40, SCPLib v. 45, AIToyLib v. 1 (all available in BaNaNaS
+- OpenTTD, v. 14.x or newer.
+- SuperLib v. 40, SCPLib v. 45, AIToyLib v. 2 (all available in BaNaNaS
   and OTTD's "Online Content").
 - Any eye candy road vehicle newGRF (with 0 running cost)
 - Game Script which supports GSToyLib (otherwise it will bankrupt fast)
 
 
-4. Recommended newGRFs and GS
+4. Recommended newGRFs and Game Scripts
+NewGRFs:
 - Eyecandy Road Vehicles
 - Funny Cars
 - Generic Cars
 - DROP
+- Real Cars set in 32 bpp (tt-forums.net: Temporal8´s Real Cars 32bpp)
+
+Game Scripts:
 - Renewed Village Growth
+
 
 4. License
 CityLifeAI is free software; you can redistribute it and/or
@@ -69,3 +74,5 @@ published by the Free Software Foundation, version 2 of the License
 5. Credits
 
 Author: Firrel
+
+Contributors: WalkedBy
