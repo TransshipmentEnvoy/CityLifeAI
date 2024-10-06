@@ -16,7 +16,8 @@ enum Category {
     POLICE = 32,
     AMBULANCE = 64,
     FIRE = 128,
-    SPORT = 256
+    LUXURY = 256,
+    OBSOLETE = 512
 };
 
 enum Action {
@@ -60,7 +61,7 @@ function Vehicle::Update()
     return false;
 }
 
-function CreateEngineList() 
+function RefreshEngineList() 
 {
     local engine_list = AIEngineList(AIVehicle.VT_ROAD);
 
@@ -76,6 +77,20 @@ function CreateEngineList()
     ::EngineList <- engine_list; // Global variable with toy engines and their categories
 }
 
+function IsObsolete(speed)
+{
+	local date = AIDate.GetCurrentDate()
+	local year = AIDate.GetYear(date)
+
+	local modern_speed_threshold = 0
+	if (year > 1930)
+		modern_speed_threshold = AIController.GetSetting("obsolete_spd_1930");
+	if (year > 2000)
+		modern_speed_threshold = AIController.GetSetting("obsolete_spd_2000");
+		
+	return (speed < modern_speed_threshold)
+}
+
 function GetEngineCategory(engine)
 {
     local weight = AIEngine.GetWeight(engine);
@@ -83,28 +98,36 @@ function GetEngineCategory(engine)
     local power = AIEngine.GetPower(engine);
     local effort = AIEngine.GetMaxTractiveEffort(engine);
 
+    local category = Category.CAR;
+    if (weight == 2 && speed == 127 && power == 100 && effort == 5) // Eyecandy Road Vehicles: Police Car
+        category = Category.POLICE;
+    else if (weight == 3 && speed == 88 && power == 140 && effort == 8) // Eyecandy Road Vehicles: Ambulance
+        category = Category.AMBULANCE;
+    else if (weight == 19 && speed == 88 && power == 500 && effort == 55) // Eyecandy Road Vehicles: Fire Engine
+        category = Category.FIRE;
+    else if (weight == 1 && speed == 56 && power == 50 && effort == 2) // Eyecandy Road Vehicles: Mail Van
+        category = Category.MAIL;
+    else if (weight == 12 && speed == 64 && power == 300 && effort == 34) // Eyecandy Road Vehicles: Dustbin Lorry (Modern)
+        category = Category.GARBAGE;
+    else if (weight == 12 && speed == 56 && power == 200 && effort == 34) // Eyecandy Road Vehicles: Dustbin Lorry (Classic)
+        category = Category.GARBAGE;
+    else if (weight == 1 && speed == 376 && power == 750 && effort == 5) // Funny Cars: F1 Jordan
+        category = Category.LUXURY;
+    // else if ()
+
+    if (IsObsolete(speed))
+		category = category | Category.OBSOLETE
+
     AILog.Info("Engine id: " + engine
     	     + ", name:" + AIEngine.GetName(engine)
     	     + ", weight: " + weight
     	     + ", speed: " + speed
     	     + ", power: " + power
     	     + ", effort: " + effort
+             + ", category: " + category
     	     );
-
-    if (weight == 2 && speed == 127 && power == 100 && effort == 5) 
-        return Category.POLICE;
-    else if (weight == 3 && speed == 88 && power == 140 && effort == 8) 
-        return Category.AMBULANCE;
-    else if (weight == 19 && speed == 88 && power == 500 && effort == 55) 
-        return Category.FIRE;
-    else if (weight == 1 && speed == 56 && power == 50 && effort == 2) 
-        return Category.MAIL;
-    else if (weight == 1 && speed == 376 && power == 750 && effort == 5) 
-        return Category.SPORT;
-    else if (weight == 12 && speed == 64 && power == 300 && effort == 34) 
-        return Category.GARBAGE;
-    else
-        return Category.CAR;
+    
+    return category;
 }
 
 function GetVehicleCountByCategory(vehicle_list, category)
@@ -137,12 +160,12 @@ function GetVehiclesByCategory(vehicle_list, category)
     return vehicle_cat_list;
 }
 
-function GetEngineListByCategory(category)
+function GetEngineListByCategory(category, exclude_category = 0)
 {
     local engine_list = AIList();
     foreach (engine, cat in ::EngineList)
     {
-        if (category & cat)
+        if ((category & cat) && !(exclude_category & cat))
         {
             engine_list.AddItem(engine, category);
         }

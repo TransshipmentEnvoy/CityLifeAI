@@ -16,7 +16,7 @@ class CityLife extends AIInfo {
     function GetDescription()   { return "Populates city with life by adding cars, bikes and service vehicles. Provide good public services to reduce the traffic. Happy cities will grow and connect to nearby towns. Requires newGRF with eyecandy vehicles and GS with ToyLib support."; }
     function GetVersion()       { return SELF_VERSION; }
     function GetDate()          { return SELF_DATE; }
-    function GetAPIVersion()    { return "1.10"; }
+    function GetAPIVersion()    { return "14"; }
     function GetURL()           { return "https://www.tt-forums.net/viewtopic.php?f=65&t=89121"; }
     function MinVersionToLoad() { return SELF_MINLOADVERSION; }
     function UseAsRandomAI ()   { return false; }
@@ -24,9 +24,41 @@ class CityLife extends AIInfo {
 
     function GetSettings() {
         AddSetting({
-            name = "debug_signs", 
-            description = "Debug: Build signs", 
-            easy_value = 0, medium_value = 0, hard_value = 0, custom_value = 0, 
+            name = "car_number_modifier",
+            description = "Car number modifier [%]",
+            min_value = 0, max_value = 1000, step_size = 10,
+            easy_value = 30, medium_value = 60, hard_value = 100, custom_value = 60,
+            flags = CONFIG_INGAME
+        });
+
+        AddSetting({
+            name = "obsolete_spd_1930",
+            description = "Minimum speed of cars after 1930",
+            min_value = 0, max_value = 255, step_size = 5,
+            easy_value = 30, medium_value = 30, hard_value = 0, custom_value = 30,
+            flags = CONFIG_INGAME
+        });
+
+        AddSetting({
+            name = "obsolete_spd_2000",
+            description = "Minimum speed of cars after 2000",
+            min_value = 0, max_value = 255, step_size = 5,
+            easy_value = 50, medium_value = 50, hard_value = 0, custom_value = 50,
+            flags = CONFIG_INGAME
+        });
+
+        AddSetting({
+            name = "max_buy",
+            description = "Maximum cars of a type to buy at once",
+            min_value = 0, max_value = 100, step_size = 1,
+            easy_value = 5, medium_value = 5, hard_value = 5, custom_value = 5,
+            flags = CONFIG_INGAME
+        });
+
+        AddSetting({
+            name = "debug_signs",
+            description = "Debug: Build signs",
+            easy_value = 0, medium_value = 0, hard_value = 0, custom_value = 0,
             flags = CONFIG_BOOLEAN | CONFIG_INGAME  | CONFIG_DEVELOPER});
     } // GetSettings
 
