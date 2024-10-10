@@ -130,7 +130,9 @@ function RoadBuilder::FindPath(towns)
 {
     if (this.status != PathfinderStatus.RUNNING)
         return false;
-
+    
+    if (this.roadtype == null)
+        return false;
     AIRoad.SetCurrentRoadType(this.roadtype);
 
     this.path = this.pathfinder.FindPath();

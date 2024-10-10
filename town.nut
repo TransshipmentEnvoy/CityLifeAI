@@ -98,12 +98,12 @@ function Town::ManageTown(max_veh)
         {
             // AILog.Info("pop: " + this.population)
 
-            local personal_count = ceil(this.population / 4000.0 * this.CalculateVehicleCountDecrease(this.pax_transported, 0, 100));
-            local service_count = ceil(this.population / 12000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 10, 60));
+            local personal_count = ceil(max(this.population - 4000, 0) / 4000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 0, 80));
+            local service_count = ceil(max(this.population - 8000, 0) / 8000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 10, 60));
             if (service_count > max_veh) {
                 service_count = max_veh;
             }
-            local emergency_count = ceil((this.population - 10000.0) / 60000.0) * 3;
+            local emergency_count = ceil(max(this.population - 12000, 0) / 60000.0) * 3;
             if (emergency_count > max_veh) {
                 emergency_count = max_veh;
             }

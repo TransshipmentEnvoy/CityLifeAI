@@ -14,7 +14,8 @@ require("roadbuilder.nut");
 require("roadpathfinder.nut")
 
 // Import ToyLib
-import("Library.AIToyLib", "AIToyLib", 1);
+//import("Library.AIToyLib", "AIToyLib", 1);
+require("dep/AIToyLib/main.nut");
 import("Library.SCPLib", "SCPLib", 45);
 import("util.superlib", "SuperLib", 40);
 
@@ -29,8 +30,9 @@ class CityLife extends AIController
     duplicit_ai = null;
 
     current_date = null;
-	current_month = null;
-	current_year = null;
+    current_month = null;
+    current_year = null;
+    current_decade_year = null;
 
     toy_lib = null;
 
@@ -58,6 +60,7 @@ class CityLife extends AIController
         this.current_date = 0;
         this.current_month = 0;
         this.current_year = 0;
+        this.current_decade_year = 0;
         this.road_builder = RoadBuilder();
         ::TownDataTable <- {};
 
@@ -74,23 +77,7 @@ function CityLife::LoadParam()
 
 function CityLife::Init()
 {
-    // Wait for game to start and give time to SCP
-    this.Sleep(84);
-
-    // Init ToyLib
-    this.toy_lib = AIToyLib(null);
-
-    // Load Param
-    this.LoadParam();
-
-    // Init time
-    local date = AIDate.GetCurrentDate();
-    this.current_date = date;
-    this.current_month = AIDate.GetMonth(date);
-    this.current_year = AIDate.GetYear(date);
-
-    if (!this.load_saved_data)
-    {
+    if (!this.load_saved_data) {
         // Set company name
         if (!AICompany.SetName("CityLifeAI"))
         {
@@ -106,8 +93,27 @@ function CityLife::Init()
         // Set company color (if fails, use default asignment)
         AICompany.SetPrimaryLiveryColour(AICompany.LS_DEFAULT, AICompany.COLOUR_GREY);
         AICompany.SetPrimaryLiveryColour(AICompany.LS_DEFAULT, AICompany.COLOUR_GREY);
-        AICompany.SetPresidentName("CityLife")
+        AICompany.SetPresidentName("CityLife");
+    }
 
+    // Wait for game to start and give time to SCP
+    this.Sleep(84);
+
+    // Init ToyLib
+    this.toy_lib = AIToyLib(null);
+
+    // Load Param
+    this.LoadParam();
+
+    // Init time
+    local date = AIDate.GetCurrentDate();
+    this.current_date = date;
+    this.current_month = AIDate.GetMonth(date);
+    this.current_year = AIDate.GetYear(date);
+    this.current_decade_year = current_year
+
+    if (!this.load_saved_data)
+    {
         // Enable automatic renewal of vehicles
         AICompany.SetAutoRenewStatus(true);
         AICompany.SetAutoRenewMonths(1);
@@ -136,10 +142,10 @@ function CityLife::Init()
     }
 
     // Ending initialization
-	this.ai_init_done = true;
+    this.ai_init_done = true;
 
     // Now we can free ::TownDataTable
-	::TownDataTable = null;
+    ::TownDataTable = null;
 }
 
 function CityLife::Start()
@@ -147,11 +153,15 @@ function CityLife::Start()
     this.Init();
 
     // Main loop
+    local need_exemption = true
     local town_id = this.towns_id.Begin();
-	while (true)
+    while (true)
     {
         // Load Params (Update In Game)
         this.LoadParam();
+
+        // Handle Events
+        this.HandleEvents();
 
         // Run the daily functions
         local date = AIDate.GetCurrentDate();
@@ -159,8 +169,23 @@ function CityLife::Start()
         {
             this.current_date = date;
 
-            this.HandleEvents();
-            AIToyLib.Check();
+            if (need_exemption) {
+                // Ask Exemption
+                AIToyLib.AskExemption(1);
+                AILog.Info("I am asking for your exemption as an AI");
+                AIToyLib.Check();
+                need_exemption = false;
+            }
+
+            // town
+            this.ManageTown(this.towns[town_id]);
+            town_id = this.towns_id.Next();
+            if (this.towns_id.IsEnd()) {
+                town_id = this.towns_id.Begin();
+            }
+
+            // road
+            this.ManageRoadBuilder();
         }
 
         // Run the monthly functions
@@ -172,6 +197,7 @@ function CityLife::Start()
             this.MonthlyManageTowns();
             this.MonthlyManageRoadBuilder();
             this.AskForMoney();
+            AIToyLib.Check();
 
             this.current_month = month;
         }
@@ -195,19 +221,18 @@ function CityLife::Start()
                 this.roadtype = roadtype;
                 AIRoad.SetCurrentRoadType(this.roadtype);
             }
-
             this.current_year = year
         }
 
-        // town
-        this.ManageTown(this.towns[town_id]);
-        town_id = this.towns_id.Next();
-        if (this.towns_id.IsEnd()) {
-            town_id = this.towns_id.Begin();
-        }
+        // Run the per-decade functions
+        if (year - this.current_decade_year >= 10)
+        {
+            AILog.Info("Decade Update");
 
-        // road
-        this.ManageRoadBuilder();
+            // update town list
+
+            this.current_decade_year = year;
+        }
     }
 }
 
@@ -215,10 +240,11 @@ function CityLife::HandleEvents()
 {
     while (AIEventController.IsEventWaiting())
     {
-		local event = AIEventController.GetNextEvent();
-		switch (event.GetEventType())
+        local event = AIEventController.GetNextEvent();
+        switch (event.GetEventType())
         {
-		    // On town founding, add a new town to the list
+            // * this is disabled because town list upkeeping is moved to decade updates
+            // On town founding, add a new town to the list
             case AIEvent.ET_TOWN_FOUNDED:
                 /*
                 event = AIEventTownFounded.Convert(event);
@@ -252,8 +278,8 @@ function CityLife::HandleEvents()
 
             default:
                 break;
-		}
-	}
+        }
+    }
 }
 
 function CityLife::AskForMoney()
@@ -287,7 +313,7 @@ function CityLife::CreateTownList()
     {
         towns_array[t] <- Town(t, this.load_saved_data);
         towns_array[t].ScanRegion(this.NetworkRadius);
-	}
+    }
 
     this.towns = towns_array;
 
@@ -321,7 +347,7 @@ function CityLife::MonthlyManageTowns()
     foreach (_, town in this.towns)
     {
         town.MonthlyManageTown();
-	}
+    }
 }
 
 function CityLife::ManageTown(town)
@@ -366,9 +392,9 @@ function CityLife::Save()
     local save_table = {};
 
     /* If the script isn't yet initialized, we can't retrieve data
-	 * from Town instances. Thus, simply use the original
-	 * loaded table. Otherwise we build the table with town data.
-	 */
+     * from Town instances. Thus, simply use the original
+     * loaded table. Otherwise we build the table with town data.
+     */
     save_table.town_data_table <- {};
     if (!this.ai_init_done)
     {
@@ -396,13 +422,13 @@ function CityLife::Load(version, saved_data)
         this.load_saved_data = true;
         foreach (townid, town_data in saved_data.town_data_table)
         {
-			::TownDataTable[townid] <- town_data;
-		}
+            ::TownDataTable[townid] <- town_data;
+        }
         this.duplicit_ai = saved_data.duplicit_ai;
         this.roadtype = saved_data.roadtype;
     }
     else
     {
-		AILog.Info("Data format doesn't match with current version. Resetting.");
-	}
+        AILog.Info("Data format doesn't match with current version. Resetting.");
+    }
 }
