@@ -23,7 +23,7 @@ require("version.nut");
 class AIToyLib
 {
     static State = { scp_handle = null, alone = true }; // first store the scp handle, second store if the lib works alone or with a SCP ready host
-    constructor(scp_handle)
+    constructor(scp_handle, ai_instance)
     {
         if (scp_handle == null) {
             // We will handle SCP ourselves if the main script don't use scp
@@ -36,7 +36,7 @@ class AIToyLib
         scp_handle.SetEventHandling(true); // force events on
         scp_handle.SCPLogging_Error(true);
         scp_handle.AddCommand("MoneyPlease", "GSToyLib Set v1", this);
-        scp_handle.AddCommand("Exemption", "GSToyLib Set v1", this);
+        scp_handle.AddCommand("Exemption", "GSToyLib Set v1", ai_instance, ai_instance.ConfirmExemption);
     }
 }
 

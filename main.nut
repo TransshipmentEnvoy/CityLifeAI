@@ -100,7 +100,7 @@ function CityLife::Init()
     this.Sleep(84);
 
     // Init ToyLib
-    this.toy_lib = AIToyLib(null);
+    this.toy_lib = AIToyLib(null, this);
 
     // Load Param
     this.LoadParam();
@@ -153,7 +153,6 @@ function CityLife::Start()
     this.Init();
 
     // Main loop
-    local need_exemption = true
     local town_id = this.towns_id.Begin();
     while (true)
     {
@@ -168,14 +167,6 @@ function CityLife::Start()
         if (date - this.current_date != 0)
         {
             this.current_date = date;
-
-            if (need_exemption) {
-                // Ask Exemption
-                AIToyLib.AskExemption(1);
-                AILog.Info("I am asking for your exemption as an AI");
-                AIToyLib.Check();
-                need_exemption = false;
-            }
 
             // town
             this.ManageTown(this.towns[town_id]);
@@ -197,6 +188,7 @@ function CityLife::Start()
             this.MonthlyManageTowns();
             this.MonthlyManageRoadBuilder();
             this.AskForMoney();
+            this.AskForExemption();
             AIToyLib.Check();
 
             this.current_month = month;
@@ -298,6 +290,19 @@ function CityLife::AskForMoney()
         AIToyLib.ToyAskMoney(max_loan_amount - bank_balance);
         AILog.Info("I am once again asking for your financial support of " + (max_loan_amount - bank_balance));
     }
+}
+
+function CityLife::AskForExemption()
+{
+    // Ask Exemption
+    AIToyLib.AskExemption(1);
+    AILog.Info("I am once again asking for your exemption as an AI");
+    AIToyLib.Check();
+}
+
+function CityLife::ConfirmExemption(message, self)
+{
+    AILog.Info("I have received my exemption as an AI");
 }
 
 function CityLife::CreateTownList()
