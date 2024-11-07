@@ -43,6 +43,9 @@ class CityLife extends AIController
 
     road_builder = null;
 
+    // comm
+    received_exemption = false;
+
     // param
     MaxTownNum = null;
     NetworkRadius = null;
@@ -101,6 +104,7 @@ function CityLife::Init()
 
     // Init ToyLib
     this.toy_lib = AIToyLib(null, this);
+    this.toy_lib.SCPConfigChange(false, false, true);
 
     // Load Param
     this.LoadParam();
@@ -141,6 +145,9 @@ function CityLife::Init()
         AIRoad.SetCurrentRoadType(this.roadtype);
     }
 
+    // comm
+    this.received_exemption = false;
+
     // Ending initialization
     this.ai_init_done = true;
 
@@ -153,6 +160,7 @@ function CityLife::Start()
     this.Init();
 
     // Main loop
+    AIToyLib.Check();
     local town_id = this.towns_id.Begin();
     while (true)
     {
@@ -167,6 +175,9 @@ function CityLife::Start()
         if (date - this.current_date != 0)
         {
             this.current_date = date;
+
+            // comm
+            AIToyLib.Check();
 
             // town
             this.ManageTown(this.towns[town_id]);
@@ -189,7 +200,6 @@ function CityLife::Start()
             this.MonthlyManageRoadBuilder();
             this.AskForMoney();
             this.AskForExemption();
-            AIToyLib.Check();
 
             this.current_month = month;
         }
@@ -294,6 +304,8 @@ function CityLife::AskForMoney()
 
 function CityLife::AskForExemption()
 {
+    if (this.received_exemption)
+        return;
     // Ask Exemption
     AIToyLib.AskExemption(1);
     AILog.Info("I am once again asking for your exemption as an AI");
@@ -303,6 +315,7 @@ function CityLife::AskForExemption()
 function CityLife::ConfirmExemption(message, self)
 {
     AILog.Info("I have received my exemption as an AI");
+    self.received_exemption = true;
 }
 
 function CityLife::CreateTownList()
