@@ -80,7 +80,25 @@ function CityLife::LoadParam()
 
 function CityLife::Init()
 {
-    if (!this.load_saved_data) {
+    // Wait for game to start and give time to SCP
+    this.Sleep(74);
+
+    // Version
+    AILog.Info("Version: " + SELF_MAJORVERSION + "." + SELF_MINORVERSION )
+
+    // Init ToyLib
+    this.toy_lib = AIToyLib(null, this);
+    this.toy_lib.SCPConfigChange(false, false, true);
+
+    // Init time
+    local date = AIDate.GetCurrentDate();
+    this.current_date = date;
+    this.current_month = AIDate.GetMonth(date);
+    this.current_year = AIDate.GetYear(date);
+    this.current_decade_year = current_year
+
+    if (!this.load_saved_data)
+    {
         // Set company name
         if (!AICompany.SetName("CityLifeAI"))
         {
@@ -99,22 +117,8 @@ function CityLife::Init()
         AICompany.SetPresidentName("CityLife");
     }
 
-    // Wait for game to start and give time to SCP
-    this.Sleep(84);
-
-    // Init ToyLib
-    this.toy_lib = AIToyLib(null, this);
-    this.toy_lib.SCPConfigChange(false, false, true);
-
     // Load Param
     this.LoadParam();
-
-    // Init time
-    local date = AIDate.GetCurrentDate();
-    this.current_date = date;
-    this.current_month = AIDate.GetMonth(date);
-    this.current_year = AIDate.GetYear(date);
-    this.current_decade_year = current_year
 
     if (!this.load_saved_data)
     {
@@ -124,7 +128,7 @@ function CityLife::Init()
     }
 
     // Create Vehicles list
-    CreateEngineList();
+    RefreshEngineList();
 
     // Create the towns list
     if (!this.load_saved_data) {
@@ -164,6 +168,9 @@ function CityLife::Start()
     local town_id = this.towns_id.Begin();
     while (true)
     {
+        // Get ticks
+        local start_tick = AIController.GetTick();
+
         // Load Params (Update In Game)
         this.LoadParam();
 
@@ -197,7 +204,7 @@ function CityLife::Start()
             AILog.Info("Monthly update");
 
             this.MonthlyManageTowns();
-            this.MonthlyManageRoadBuilder();
+            // this.MonthlyManageRoadBuilder();
             this.AskForMoney();
             this.AskForExemption();
 
@@ -210,7 +217,7 @@ function CityLife::Start()
         {
             AILog.Info("Yearly Update");
 
-            CreateEngineList();
+            RefreshEngineList();
 
             // update road type
             local roadtype = GetRoadType();
@@ -235,6 +242,20 @@ function CityLife::Start()
 
             this.current_decade_year = year;
         }
+
+        // Manage town and road builder only when there is enough money
+        local bank_balance = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+        if (bank_balance > 50000)
+        {
+            this.ManageTown(this.towns[town_index++]);
+            town_index = town_index >= this.towns.len() ? 0 : town_index;
+        }
+        // if (bank_balance >= 250000)
+        //     this.ManageRoadBuilder();
+
+        // Prevent excesive cpu usage
+        if (AIController.GetTick() - start_tick < 5)
+            AIController.Sleep(5);
     }
 }
 
@@ -289,11 +310,17 @@ function CityLife::AskForMoney()
     local bank_balance = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
     local loan_amount = AICompany.GetLoanAmount();
     local max_loan_amount = AICompany.GetMaxLoanAmount();
+    // AILog.Info("max_loan_amount: " + max_loan_amount);
+    // AILog.Info("bank balance: " + bank_balance);
+    max_loan_amount = max_loan_amount > 500000 ? max_loan_amount : 500000;
     if (loan_amount > 0 && bank_balance >= loan_amount)
     {
         AICompany.SetLoanAmount(0);
         bank_balance -= loan_amount;
     }
+
+    AILog.Info("max loan amount: " + max_loan_amount);
+    AILog.Info("bank balance: " + bank_balance);
 
     if (bank_balance < max_loan_amount)
     {
@@ -372,7 +399,6 @@ function CityLife::ManageTown(town)
 {
     town.ManageTown(this.MaxVehiclePerTown);
 }
-
 
 function CityLife::MonthlyManageRoadBuilder()
 {

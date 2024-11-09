@@ -44,7 +44,7 @@ function RoadBuilder::Init(towns, towns_id, roadtype)
 
     this.roadtype = roadtype;
     this.pathfinder.InitializePath([AITown.GetLocation(this.town_a)], [AITown.GetLocation(this.town_b)], true);
-    this.pathfinder.SetMaxIterations(5000000);
+    this.pathfinder.SetMaxIterations(500000);
     this.pathfinder.SetStepSize(100);
     this.status = PathfinderStatus.RUNNING;
 
@@ -163,6 +163,34 @@ function RoadBuilder::BuildRoad(towns)
                 if (AIRoad.AreRoadTilesConnected(this.path.GetTile(), par.GetTile()))
                 {
                     if (AITile.HasTransportType(par.GetTile(), AITile.TRANSPORT_RAIL))
+                    {
+                        local bridge_result = SuperLib.Road.ConvertRailCrossingToBridge(par.GetTile(), this.path.GetTile());
+                        if (bridge_result.succeeded == true)
+                        {
+                            local new_par = par;
+                            while (new_par != null && new_par.GetTile() != bridge_result.bridge_start && new_par.GetTile() != bridge_result.bridge_end)
+                            {
+                                new_par = new_par.GetParent();
+                            }
+
+                            par = new_par;
+                        }
+                        else
+                        {
+                            AILog.Info("Failed to bridge railway crossing");
+                        }
+                    }
+
+                } else {
+
+                    /* Look for longest straight road and build it as one build command */
+                    local straight_begin = this.path;
+                    local straight_end = par;
+
+                    local prev = straight_end.GetParent();
+                    while(prev != null &&
+                            SuperLib.Tile.IsStraight(straight_begin.GetTile(), prev.GetTile()) &&
+                            AIMap.DistanceManhattan(straight_end.GetTile(), prev.GetTile()) == 1)
                     {
                         local bridge_result = SuperLib.Road.ConvertRailCrossingToBridge(par.GetTile(), this.path.GetTile());
                         if (bridge_result.succeeded == true)
@@ -335,11 +363,11 @@ function GetRoadType()
     }
 
     // Check if the road type at the location is usable
-    /* foreach (road, _ in road_types)
+    foreach (road, _ in road_types)
     {
         if (!AIRoad.ConvertRoadType(location, location, road) && AIError.GetLastError() == AIRoad.ERR_UNSUITABLE_ROAD)
             return road;
-    }*/
+    }
 
     // Get the default road for an engine type and check if it is available to the AI
     local engine = ::EngineList.Begin();
@@ -413,6 +441,13 @@ function BuildDepot(town_id)
 {
     local depot_placement_tiles = AITileList();
     local town_location = AITown.GetLocation(town_id);
+
+    local road_type = GetRoadType(town_location);
+    if (road_type == null) {
+        AILog.Warning(AITown.GetName(town_id) + ": Could not detect town road type");
+        return null;
+    }
+    AIRoad.SetCurrentRoadType(road_type);
 
     // The rectangle corners must be valid tiles
     local corner1 = town_location - AIMap.GetTileIndex(25, 25);
