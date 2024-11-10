@@ -1,5 +1,5 @@
 /*
- * This file is part of CityLifeAI, an AI for OpenTTD.
+ * This file is part of CityLifeAI (Custom), an AI for OpenTTD.
  *
  * It's free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the
@@ -7,20 +7,20 @@
  *
  */
 
+require("math_util.nut")
 require("version.nut");
 require("vehicle.nut");
 require("town.nut");
 require("roadbuilder.nut");
-require("roadpathfinder.nut")
+//require("roadpathfinder.nut")
 
 // Import ToyLib
-//import("Library.AIToyLib", "AIToyLib", 1);
+//import("Library.AIToyLib", "AIToyLib", 2);
 require("dep/AIToyLib/main.nut");
 import("Library.SCPLib", "SCPLib", 45);
 import("util.superlib", "SuperLib", 40);
 
-// RoadPathFinder <- SuperLib.RoadPathFinder;
-RoadPathFinder <- CityLifeAI_RoadPathFinder
+RoadPathFinder <- SuperLib.RoadPathFinder;
 
 class CityLife extends AIController
 {
@@ -36,7 +36,7 @@ class CityLife extends AIController
 
     toy_lib = null;
 
-    roadtype = null;
+    road_type = null;
 
     towns = null;
     towns_id = null;
@@ -142,11 +142,11 @@ function CityLife::Init()
 
     // road type
     if (!this.load_saved_data) {
-        this.roadtype = GetRoadType();
+        this.road_type = GetRoadType(null);
     }
-    if (this.roadtype != null) {
-        AILog.Info("Select Road Type: " + AIRoad.GetName(this.roadtype));
-        AIRoad.SetCurrentRoadType(this.roadtype);
+    if (this.road_type != null) {
+        AILog.Info("Select Road Type: " + AIRoad.GetName(this.road_type));
+        AIRoad.SetCurrentRoadType(this.road_type);
     }
 
     // comm
@@ -177,6 +177,24 @@ function CityLife::Start()
         // Handle Events
         this.HandleEvents();
 
+        // Get bank balance
+        local bank_balance = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+        local allow_manage_town = (bank_balance > 50000);
+
+        // Run the per-loop functions
+        {
+            // town
+            if (allow_manage_town)
+            {
+                // AILog.Info("Manage town: " + AITown.GetName(this.towns[town_id].id));
+                this.ManageTown(this.towns[town_id]);
+                town_id = this.towns_id.Next();
+                if (this.towns_id.IsEnd()) {
+                    town_id = this.towns_id.Begin();
+                }
+            }
+        }
+
         // Run the daily functions
         local date = AIDate.GetCurrentDate();
         if (date - this.current_date != 0)
@@ -186,15 +204,7 @@ function CityLife::Start()
             // comm
             AIToyLib.Check();
 
-            // town
-            this.ManageTown(this.towns[town_id]);
-            town_id = this.towns_id.Next();
-            if (this.towns_id.IsEnd()) {
-                town_id = this.towns_id.Begin();
-            }
-
-            // road
-            this.ManageRoadBuilder();
+            // this.ManageRoadBuilder();
         }
 
         // Run the monthly functions
@@ -220,15 +230,15 @@ function CityLife::Start()
             RefreshEngineList();
 
             // update road type
-            local roadtype = GetRoadType();
-            if (roadtype != null) {
-                if (roadtype != this.roadtype) {
-                    AILog.Info("New road type: " + AIRoad.GetName(roadtype) + "  => Switch to new epoch");
+            local road_type = GetRoadType(null);
+            if (road_type != null) {
+                if (road_type != this.road_type) {
+                    AILog.Info("New road type: " + AIRoad.GetName(road_type) + "  => Switch to new epoch");
                     // switch to a new epoch
                     SwitchToNewEpoch();
                 }
-                this.roadtype = roadtype;
-                AIRoad.SetCurrentRoadType(this.roadtype);
+                this.road_type = road_type;
+                AIRoad.SetCurrentRoadType(this.road_type);
             }
             this.current_year = year
         }
@@ -242,16 +252,6 @@ function CityLife::Start()
 
             this.current_decade_year = year;
         }
-
-        // Manage town and road builder only when there is enough money
-        local bank_balance = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-        if (bank_balance > 50000)
-        {
-            this.ManageTown(this.towns[town_index++]);
-            town_index = town_index >= this.towns.len() ? 0 : town_index;
-        }
-        // if (bank_balance >= 250000)
-        //     this.ManageRoadBuilder();
 
         // Prevent excesive cpu usage
         if (AIController.GetTick() - start_tick < 5)
@@ -383,7 +383,7 @@ function CityLife::VerboseTownList()
     foreach (t, _ in this.towns_id) {
         local name = AITown.GetName(t);
         local population = AITown.GetPopulation(t);
-        AILog.Info("Service " + name + " (" + population + ")");
+        AILog.Info("  Service " + name + " (" + population + ")");
     }
 }
 
@@ -397,7 +397,7 @@ function CityLife::MonthlyManageTowns()
 
 function CityLife::ManageTown(town)
 {
-    town.ManageTown(this.MaxVehiclePerTown);
+    town.ManageTown(this.road_type, this.MaxVehiclePerTown);
 }
 
 function CityLife::MonthlyManageRoadBuilder()
@@ -405,7 +405,7 @@ function CityLife::MonthlyManageRoadBuilder()
     if (this.duplicit_ai)
         return;
 
-    this.road_builder.Init(this.towns, this.towns_id, this.roadtype);
+    this.road_builder.Init(this.towns, this.towns_id, this.road_type);
 }
 
 function CityLife::ManageRoadBuilder()
@@ -447,7 +447,7 @@ function CityLife::Save()
     else
     {
         save_table.duplicit_ai <- this.duplicit_ai;
-        save_table.roadtype <- this.roadtype;
+        save_table.road_type <- this.road_type;
         foreach (town_id, town in this.towns)
         {
             save_table.town_data_table[town_id] <- town.SaveTownData();
@@ -469,7 +469,7 @@ function CityLife::Load(version, saved_data)
             ::TownDataTable[townid] <- town_data;
         }
         this.duplicit_ai = saved_data.duplicit_ai;
-        this.roadtype = saved_data.roadtype;
+        this.road_type = saved_data.road_type;
     }
     else
     {

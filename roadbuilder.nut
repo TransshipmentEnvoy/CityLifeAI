@@ -20,7 +20,7 @@ class RoadBuilder
     town_center = null;
     town_a = null;
     town_b = null;
-    roadtype = null;
+    road_type = null;
     path = null;
 
     Me = null;
@@ -34,7 +34,7 @@ class RoadBuilder
     }
 }
 
-function RoadBuilder::Init(towns, towns_id, roadtype)
+function RoadBuilder::Init(towns, towns_id, road_type)
 {
     if (this.status != PathfinderStatus.IDLE)
         return false;
@@ -42,7 +42,7 @@ function RoadBuilder::Init(towns, towns_id, roadtype)
     if (!this.FindTownsToConnect(towns, towns_id))
         return false;
 
-    this.roadtype = roadtype;
+    this.road_type = road_type;
     this.pathfinder.InitializePath([AITown.GetLocation(this.town_a)], [AITown.GetLocation(this.town_b)], true);
     this.pathfinder.SetMaxIterations(500000);
     this.pathfinder.SetStepSize(100);
@@ -106,9 +106,8 @@ function RoadBuilder::FindTownsToConnect(towns, towns_id)
     if (AITown.IsValidTown(_town_a)) {
         this.town_a = _town_a;
     }
-    if (this.town_a == null) {
+    if (this.town_a == null || towns[this.town_a].depot == null)
         return false;
-    }
 
     // from connected_town_list, choose the nearest to the town_a
     this.town_b = null;
@@ -131,9 +130,9 @@ function RoadBuilder::FindPath(towns)
     if (this.status != PathfinderStatus.RUNNING)
         return false;
     
-    if (this.roadtype == null)
+    if (this.road_type == null)
         return false;
-    AIRoad.SetCurrentRoadType(this.roadtype);
+    AIRoad.SetCurrentRoadType(this.road_type);
 
     this.path = this.pathfinder.FindPath();
     if (this.path == null)
@@ -192,23 +191,15 @@ function RoadBuilder::BuildRoad(towns)
                             SuperLib.Tile.IsStraight(straight_begin.GetTile(), prev.GetTile()) &&
                             AIMap.DistanceManhattan(straight_end.GetTile(), prev.GetTile()) == 1)
                     {
-                        local bridge_result = SuperLib.Road.ConvertRailCrossingToBridge(par.GetTile(), this.path.GetTile());
-                        if (bridge_result.succeeded == true)
-                        {
-                            local new_par = par;
-                            while (new_par != null && new_par.GetTile() != bridge_result.bridge_start && new_par.GetTile() != bridge_result.bridge_end)
-                            {
-                                new_par = new_par.GetParent();
-                            }
-
-                            par = new_par;
-                        }
-                        else
-                        {
-                            AILog.Info("Failed to bridge railway crossing");
-                        }
+                        straight_end = prev;
+                        prev = straight_end.GetParent();
                     }
 
+                    /* update the looping vars. (this.path is set to par in the end of the main loop) */
+                    par = straight_end;
+
+                    // todo loop through the straight road and build/convert it
+                    // use async mode
                     local path_t = this.path.GetTile();
                     local t = par.GetTile();
                     if (AIRoad.IsRoadTile(t) && AITile.GetOwner(t) == this.Me) {
@@ -222,21 +213,17 @@ function RoadBuilder::BuildRoad(towns)
                         if (!result && !AIError.GetLastError() == AIRoad.ERR_UNSUITABLE_ROAD) {
                             AILog.Info("Upgrade road error: " + AIError.GetLastErrorString());
                         }
-                    }
-
-                } else {
-                    // Build road
-                    local result = false;
-                    while (!result)
-                    {
-                        result = AIRoad.BuildRoad(this.path.GetTile(), par.GetTile());
-                        if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
-                            break;
-                    }
-
-                    if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
-                        AILog.Info("Build road error: " + AIError.GetLastErrorString());
-                        // AIController.Break("debug")
+                    } else {
+                        // Build road
+                        local result = false;
+                        while (!result)
+                        {
+                            result = AIRoad.BuildRoad(straight_begin.GetTile(), straight_end.GetTile());
+                            if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
+                                break;
+                        }
+                        if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT)
+                            AILog.Info("Build road error: " + AIError.GetLastErrorString());
                     }
                 }
             } else {
@@ -328,7 +315,7 @@ function RoadBuilder::BuildRoad(towns)
 }
 
 
-function GetRoadType()
+function GetRoadType(location)
 {
     local ignore_road_table = {}
     ignore_road_table["ISR Style paved driveway"] <- 0;
@@ -362,11 +349,13 @@ function GetRoadType()
         road_types.AddItem(r, 0);
     }
 
-    // Check if the road type at the location is usable
-    foreach (road, _ in road_types)
-    {
-        if (!AIRoad.ConvertRoadType(location, location, road) && AIError.GetLastError() == AIRoad.ERR_UNSUITABLE_ROAD)
-            return road;
+    if (location != null) {
+        // Check if the road type at the location is usable
+        foreach (road, _ in road_types)
+        {
+            if (!AIRoad.ConvertRoadType(location, location, road) && AIError.GetLastError() == AIRoad.ERR_UNSUITABLE_ROAD)
+                return road;
+        }
     }
 
     // Get the default road for an engine type and check if it is available to the AI
@@ -448,6 +437,7 @@ function BuildDepot(town_id)
         return null;
     }
     AIRoad.SetCurrentRoadType(road_type);
+    AILog.Info("  Current Depot Road Type: " + AIRoad.GetName(road_type));
 
     // The rectangle corners must be valid tiles
     local corner1 = town_location - AIMap.GetTileIndex(25, 25);
