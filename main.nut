@@ -12,7 +12,7 @@ require("version.nut");
 require("vehicle.nut");
 require("town.nut");
 require("roadbuilder.nut");
-//require("roadpathfinder.nut")
+require("roadpathfinder.nut")
 
 // Import ToyLib
 //import("Library.AIToyLib", "AIToyLib", 2);
@@ -20,7 +20,8 @@ require("dep/AIToyLib/main.nut");
 import("Library.SCPLib", "SCPLib", 45);
 import("util.superlib", "SuperLib", 40);
 
-RoadPathFinder <- SuperLib.RoadPathFinder;
+// RoadPathFinder <- SuperLib.RoadPathFinder;
+RoadPathFinder <- CityLifeAI_RoadPathFinder
 
 class CityLife extends AIController
 {
@@ -40,6 +41,7 @@ class CityLife extends AIController
 
     towns = null;
     towns_id = null;
+    towns_backup_id = null;
 
     road_builder = null;
 
@@ -66,6 +68,7 @@ class CityLife extends AIController
         this.current_decade_year = 0;
         this.road_builder = RoadBuilder();
         ::TownDataTable <- {};
+        ::TownBackupDataTable <- {};
 
         this.Me = AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
     } // constructor
@@ -181,20 +184,6 @@ function CityLife::Start()
         local bank_balance = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
         local allow_manage_town = (bank_balance > 50000);
 
-        // Run the per-loop functions
-        {
-            // town
-            if (allow_manage_town)
-            {
-                // AILog.Info("Manage town: " + AITown.GetName(this.towns[town_id].id));
-                this.ManageTown(this.towns[town_id]);
-                town_id = this.towns_id.Next();
-                if (this.towns_id.IsEnd()) {
-                    town_id = this.towns_id.Begin();
-                }
-            }
-        }
-
         // Run the daily functions
         local date = AIDate.GetCurrentDate();
         if (date - this.current_date != 0)
@@ -203,8 +192,6 @@ function CityLife::Start()
 
             // comm
             AIToyLib.Check();
-
-            // this.ManageRoadBuilder();
         }
 
         // Run the monthly functions
@@ -214,7 +201,7 @@ function CityLife::Start()
             AILog.Info("Monthly update");
 
             this.MonthlyManageTowns();
-            // this.MonthlyManageRoadBuilder();
+            this.MonthlyManageRoadBuilder(town_id);
             this.AskForMoney();
             this.AskForExemption();
 
@@ -251,6 +238,23 @@ function CityLife::Start()
             // update town list
 
             this.current_decade_year = year;
+        }
+
+        // Run the per-loop functions
+        {
+            // town
+            if (allow_manage_town)
+            {
+                // AILog.Info("Manage town: " + AITown.GetName(this.towns[town_id].id));
+                this.ManageTown(this.towns[town_id]);
+                town_id = this.towns_id.Next();
+                if (this.towns_id.IsEnd()) {
+                    town_id = this.towns_id.Begin();
+                }
+            }
+
+            // road
+            this.ManageRoadBuilder();
         }
 
         // Prevent excesive cpu usage
@@ -319,7 +323,7 @@ function CityLife::AskForMoney()
         bank_balance -= loan_amount;
     }
 
-    AILog.Info("max loan amount: " + max_loan_amount);
+    // AILog.Info("max loan amount: " + max_loan_amount);
     AILog.Info("bank balance: " + bank_balance);
 
     if (bank_balance < max_loan_amount)
@@ -364,6 +368,9 @@ function CityLife::CreateTownList()
 
     towns_list.Valuate(function(_){return 0;});
     this.towns_id = towns_list;
+
+    // initialize towns_backup
+    this.towns_backup_id = AIList();
 }
 
 function CityLife::LoadTownList()
@@ -400,12 +407,12 @@ function CityLife::ManageTown(town)
     town.ManageTown(this.road_type, this.MaxVehiclePerTown);
 }
 
-function CityLife::MonthlyManageRoadBuilder()
+function CityLife::MonthlyManageRoadBuilder(town_id)
 {
     if (this.duplicit_ai)
         return;
 
-    this.road_builder.Init(this.towns, this.towns_id, this.road_type);
+    this.road_builder.Init(this.towns, town_id, this.road_type);
 }
 
 function CityLife::ManageRoadBuilder()

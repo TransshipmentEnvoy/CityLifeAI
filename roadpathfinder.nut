@@ -18,7 +18,8 @@
  *
  */
 
-import("pathfinder.road", "_CityLifeAI_RoadPathFinder_private_RPF", 4);
+// import("pathfinder.road", "RoadPathFinder_private", 4);
+require("pathfinder/road.nut");
 
 
 /*
@@ -34,14 +35,14 @@ import("pathfinder.road", "_CityLifeAI_RoadPathFinder_private_RPF", 4);
 * Private Custom RPF for building new road or repairing existing road
 */
 
-class _CityLifeAI_RoadPathFinder_private_CustomRPF extends _CityLifeAI_RoadPathFinder_private_RPF
+class _CityLifeAI_RoadPathFinder_private_CustomRPF extends RoadPathFinder_private
 {
     forbidden_tiles = null;
     estimate_multiplier = null;
 
     constructor()
     {
-        ::_CityLifeAI_RoadPathFinder_private_RPF.constructor();
+        ::RoadPathFinder_private.constructor();
 
         this.forbidden_tiles = [];
         this.estimate_multiplier = 1;
@@ -50,7 +51,7 @@ class _CityLifeAI_RoadPathFinder_private_CustomRPF extends _CityLifeAI_RoadPathF
 }
 function _CityLifeAI_RoadPathFinder_private_CustomRPF::InitializePath(sources, goals)
 {
-    ::_CityLifeAI_RoadPathFinder_private_RPF.InitializePath(sources, goals);
+    ::RoadPathFinder_private.InitializePath(sources, goals);
 }
 
 function _CityLifeAI_RoadPathFinder_private_CustomRPF::SetForbiddenTiles(squirrel_tile_array)
@@ -65,7 +66,7 @@ function _CityLifeAI_RoadPathFinder_private_CustomRPF::SetEstimateMultiplier(est
 
 function _CityLifeAI_RoadPathFinder_private_CustomRPF::_Cost(self, path, new_tile, new_direction)
 {
-    local cost = ::_CityLifeAI_RoadPathFinder_private_RPF._Cost(self, path, new_tile, new_direction);
+    local cost = ::RoadPathFinder_private._Cost(self, path, new_tile, new_direction);
     local M = 10000;
 
     // Penalty for crossing railways without bridge
@@ -103,7 +104,7 @@ function _CityLifeAI_RoadPathFinder_private_CustomRPF::_Cost(self, path, new_til
 
 function _CityLifeAI_RoadPathFinder_private_CustomRPF::_Neighbours(self, path, cur_node)
 {
-    local tiles = ::_CityLifeAI_RoadPathFinder_private_RPF._Neighbours(self, path, cur_node);
+    local tiles = ::RoadPathFinder_private._Neighbours(self, path, cur_node);
 
     local offsets = [AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(0, -1),
                     AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0)];
@@ -140,7 +141,7 @@ function _CityLifeAI_RoadPathFinder_private_CustomRPF::_Neighbours(self, path, c
 
 function _CityLifeAI_RoadPathFinder_private_CustomRPF::_Estimate(self, cur_tile, cur_direction, goal_tiles)
 {
-    local min_cost = ::_CityLifeAI_RoadPathFinder_private_RPF._Estimate(self, cur_tile, cur_direction, goal_tiles);
+    local min_cost = ::RoadPathFinder_private._Estimate(self, cur_tile, cur_direction, goal_tiles);
     return (min_cost * self.estimate_multiplier).tointeger();
 }
 
@@ -157,7 +158,7 @@ class _CityLifeAI_RoadPathFinder_private_CustomRPF_NoBuild extends _CityLifeAI_R
 
     constructor()
     {
-        ::_CityLifeAI_RoadPathFinder_private_RPF.constructor();
+        ::RoadPathFinder_private.constructor();
 
         this.forbidden_tiles = [];
         this.estimate_multiplier = 1;
@@ -166,7 +167,7 @@ class _CityLifeAI_RoadPathFinder_private_CustomRPF_NoBuild extends _CityLifeAI_R
 }
 /*function _CityLifeAI_RoadPathFinder_private_CustomRPF_NoBuild::InitializePath(sources, goals)
 {
-    ::_CityLifeAI_RoadPathFinder_private_RPF.InitializePath(sources, goals);
+    ::RoadPathFinder_private.InitializePath(sources, goals);
 }
 
 function _CityLifeAI_RoadPathFinder_private_CustomRPF_NoBuild::SetForbiddenTiles(squirrel_tile_array)
@@ -182,7 +183,7 @@ function _CityLifeAI_RoadPathFinder_private_CustomRPF_NoBuild::SetEstimateMultip
 
 function _CityLifeAI_RoadPathFinder_private_CustomRPF_NoBuild::_Cost(self, path, new_tile, new_direction)
 {
-    return ::_CityLifeAI_RoadPathFinder_private_RPF._Cost(self, path, new_tile, new_direction);
+    return ::RoadPathFinder_private._Cost(self, path, new_tile, new_direction);
 }
 
 function _CityLifeAI_RoadPathFinder_private_CustomRPF_NoBuild::_Neighbours(self, path, cur_node)
@@ -244,7 +245,7 @@ function _CityLifeAI_RoadPathFinder_private_CustomRPF_NoBuild::_Neighbours(self,
 
 function _CityLifeAI_RoadPathFinder_private_CustomRPF_NoBuild::_Estimate(self, cur_tile, cur_direction, goal_tiles)
 {
-    local min_cost = ::_CityLifeAI_RoadPathFinder_private_RPF._Estimate(self, cur_tile, cur_direction, goal_tiles);
+    local min_cost = ::RoadPathFinder_private._Estimate(self, cur_tile, cur_direction, goal_tiles);
     return (min_cost * self.estimate_multiplier).tointeger();
 }
 
@@ -318,16 +319,18 @@ function CityLifeAI_RoadPathFinder::InitializePath(sources, goals, repair_existi
     this._pf.SetEstimateMultiplier(estimate_multiplier);
 
     // Set SuperLib defaults
-    this._pf.cost.no_existing_road = repair_existing? 300 : 60; // default = 40
+    this._pf.cost.no_existing_road = repair_existing? 300 : 40; // default = 40
     this._pf.cost.tile = 80; // default = 100
-    this._pf.cost.max_bridge_length = 15; // default = 10
-    this._pf.cost.slope = 400;
+    this._pf.cost.max_bridge_length = 10; // default = 10
+    this._pf.cost.max_tunnel_length = 8;
+    this._pf.cost.turn = 20;
+    this._pf.cost.slope = 250;
     this._pf.cost.bridge_per_tile = 350; //150;
     this._pf.cost.tunnel_per_tile = 320; //120;
 
     // Set maximum cost as some constant plus a factor times the cost of the optimal path to avoid to long detours
     // factor = 5/2 aka 2,5
-    this._pf.cost.max_cost = 100000 + (this._pf.cost.tile * AIMap.DistanceManhattan(sources[0], goals[0]) * 50) + this._pf.cost.turn * 20;
+    // this._pf.cost.max_cost = 100000 + (this._pf.cost.tile * AIMap.DistanceManhattan(sources[0], goals[0]) * 50) + this._pf.cost.turn * 20;
     // AILog.Info("max cost: " + this._pf.cost.max_cost);
 
     this.max_iterations = null;
@@ -368,6 +371,9 @@ function CityLifeAI_RoadPathFinder::FindPath(num_iterations = null)
         // No path found (within time)
         _SuperLib_Log.Info("SuperLib: Finding path took to long -> abort", _SuperLib_Log.LVL_SUB_DECISIONS);
         //_SuperLib_Log.Info("SuperLib: Finding path took to long -> abort - used " + this.accumulated_iterations + " of max " + this.max_iterations, _SuperLib_Log.LVL_SUB_DECISIONS);
+        // cancel pf
+        this._pf._pathfinder._CleanPath();
+        this._pf._running = false;
         this.find_path_error_code = CityLifeAI_RoadPathFinder.PATH_FIND_FAILED_TIME_OUT;
         return null;
     }

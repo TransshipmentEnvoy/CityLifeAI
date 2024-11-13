@@ -44,7 +44,7 @@ function RoadBuilder::Init(towns, towns_id, road_type)
 
     this.road_type = road_type;
     this.pathfinder.InitializePath([AITown.GetLocation(this.town_a)], [AITown.GetLocation(this.town_b)], true);
-    this.pathfinder.SetMaxIterations(500000);
+    this.pathfinder.SetMaxIterations(100000);
     this.pathfinder.SetStepSize(100);
     this.status = PathfinderStatus.RUNNING;
 
@@ -78,12 +78,11 @@ function RoadBuilder::FindFastestRoadType()
 }
 */
 
-function RoadBuilder::FindTownsToConnect(towns, towns_id)
+function RoadBuilder::FindTownsToConnect(towns, center_town_id)
 {
     // random sample in towns
-    towns_id.Valuate(AIBase.RandItem);
-    local center_town_id = towns_id.Begin();
     this.town_center = center_town_id;
+    AILog.Info("Looking for towns to connect around center: " + AITown.GetName(center_town_id));
     local center_town = towns[center_town_id];
     local center_town_pos = AITown.GetLocation(center_town_id);
 
@@ -106,7 +105,7 @@ function RoadBuilder::FindTownsToConnect(towns, towns_id)
     if (AITown.IsValidTown(_town_a)) {
         this.town_a = _town_a;
     }
-    if (this.town_a == null || towns[this.town_a].depot == null)
+    if (this.town_a == null)
         return false;
 
     // from connected_town_list, choose the nearest to the town_a
@@ -180,26 +179,6 @@ function RoadBuilder::BuildRoad(towns)
                         }
                     }
 
-                } else {
-
-                    /* Look for longest straight road and build it as one build command */
-                    local straight_begin = this.path;
-                    local straight_end = par;
-
-                    local prev = straight_end.GetParent();
-                    while(prev != null &&
-                            SuperLib.Tile.IsStraight(straight_begin.GetTile(), prev.GetTile()) &&
-                            AIMap.DistanceManhattan(straight_end.GetTile(), prev.GetTile()) == 1)
-                    {
-                        straight_end = prev;
-                        prev = straight_end.GetParent();
-                    }
-
-                    /* update the looping vars. (this.path is set to par in the end of the main loop) */
-                    par = straight_end;
-
-                    // todo loop through the straight road and build/convert it
-                    // use async mode
                     local path_t = this.path.GetTile();
                     local t = par.GetTile();
                     if (AIRoad.IsRoadTile(t) && AITile.GetOwner(t) == this.Me) {
@@ -213,17 +192,21 @@ function RoadBuilder::BuildRoad(towns)
                         if (!result && !AIError.GetLastError() == AIRoad.ERR_UNSUITABLE_ROAD) {
                             AILog.Info("Upgrade road error: " + AIError.GetLastErrorString());
                         }
-                    } else {
-                        // Build road
-                        local result = false;
-                        while (!result)
-                        {
-                            result = AIRoad.BuildRoad(straight_begin.GetTile(), straight_end.GetTile());
-                            if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
-                                break;
-                        }
-                        if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT)
-                            AILog.Info("Build road error: " + AIError.GetLastErrorString());
+                    }
+
+                } else {
+                    // Build road
+                    local result = false;
+                    while (!result)
+                    {
+                        result = AIRoad.BuildRoad(this.path.GetTile(), par.GetTile());
+                        if (AIError.GetLastError() != AIError.ERR_VEHICLE_IN_THE_WAY)
+                            break;
+                    }
+
+                    if (!result && !AIError.GetLastError() == AIError.ERR_ALREADY_BUILT) {
+                        AILog.Info("Build road error: " + AIError.GetLastErrorString());
+                        // AIController.Break("debug")
                     }
                 }
             } else {
