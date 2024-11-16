@@ -106,34 +106,44 @@ function _CityLifeAI_RoadPathFinder_private_CustomRPF::_Neighbours(self, path, c
 {
     local tiles = ::RoadPathFinder_private._Neighbours(self, path, cur_node);
 
-    local offsets = [AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(0, -1),
-                    AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0)];
-    /* Check all tiles adjacent to the current tile. */
-    foreach(offset in offsets)
-    {
-        //local next_tile = cur_node + offset;
-        local cur_height = AITile.GetMaxHeight(cur_node);
-        if(AITile.GetSlope(cur_node) != AITile.SLOPE_FLAT) continue;
+    if (path.GetParent() == null || AIMap.DistanceManhattan(cur_node, path.GetParent().GetTile()) == 1) {
+        // make sure this is not a bridge end / tunnel end
 
-        local bridge_length = 2;
-        local i_tile = cur_node + offset;
-
-        while(AITile.HasTransportType(i_tile, AITile.TRANSPORT_RAIL) || AITile.IsWaterTile(i_tile)) // try to bridge over rail or flat water (rivers/canals)
+        local offsets = []
+        if (path.GetParent() == null) {
+            offsets = [AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(0, -1),
+                            AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0)];
+        } else {
+            offsets = [cur_node - path.GetParent().GetTile()];
+        }
+        /* Check all tiles adjacent to the current tile. */
+        foreach(offset in offsets)
         {
-            i_tile += offset;
-            bridge_length++;
+            //local next_tile = cur_node + offset;
+            local cur_height = AITile.GetMaxHeight(cur_node);
+            if(AITile.GetSlope(cur_node) != AITile.SLOPE_FLAT) continue;
+
+            local bridge_length = 2;
+            local i_tile = cur_node + offset;
+
+            while(AITile.HasTransportType(i_tile, AITile.TRANSPORT_RAIL) || 
+                AITile.HasTransportType(i_tile, AITile.TRANSPORT_WATER)) // try to bridge over rail or flat water (rivers/canals)
+            {
+                i_tile += offset;
+                bridge_length++;
+            }
+
+            if(bridge_length <= 2) continue; // Nothing to bridge over
+            if(!_SuperLib_Tile.IsStraight(cur_node, i_tile)) continue; // Detect map warp-arounds
+
+            local bridge_list = AIBridgeList_Length(bridge_length);
+            if(bridge_list.IsEmpty() || !AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridge_list.Begin(), cur_node, i_tile)) {
+                continue; // not possible to build bridge here
+            }
+
+            // Found possible bridge over rail
+            tiles.push([i_tile, self._GetDirection(cur_node, cur_node+offset, true) << 4]);
         }
-
-        if(bridge_length <= 2) continue; // Nothing to bridge over
-        if(!_SuperLib_Tile.IsStraight(cur_node, i_tile)) continue; // Detect map warp-arounds
-
-        local bridge_list = AIBridgeList_Length(bridge_length);
-        if(bridge_list.IsEmpty() || !AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridge_list.Begin(), cur_node, i_tile)) {
-            continue; // not possible to build bridge here
-        }
-
-        // Found possible bridge over rail
-        tiles.push([i_tile, 0xFF]);
     }
 
     return tiles;
