@@ -68,7 +68,7 @@ class CityLife extends AIController
         this.current_decade_year = 0;
         this.road_builder = RoadBuilder();
         ::TownDataTable <- {};
-        ::TownBackupDataTable <- {};
+        ::TownsIDList <- [];
 
         this.Me = AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
     } // constructor
@@ -160,6 +160,7 @@ function CityLife::Init()
 
     // Now we can free ::TownDataTable
     ::TownDataTable = null;
+    ::TownsIDList = null;
 }
 
 function CityLife::Start()
@@ -231,11 +232,13 @@ function CityLife::Start()
         }
 
         // Run the per-decade functions
-        if (year - this.current_decade_year >= 10)
+        if (year - this.current_decade_year >= 1)
         {
             AILog.Info("Decade Update");
 
             // update town list
+            town_id = this.RefreshTownList()
+            this.VerboseTownList();
 
             this.current_decade_year = year;
         }
@@ -368,37 +371,102 @@ function CityLife::CreateTownList()
 
     towns_list.Valuate(function(_){return 0;});
     this.towns_id = towns_list;
-
-    // initialize towns_backup
-    this.towns_backup_id = AIList();
 }
 
 function CityLife::LoadTownList()
 {
     this.towns = {};
-    this.towns_id = AIList();
-
     foreach (t, _ in ::TownDataTable) {
         this.towns[t] <- Town(t, this.load_saved_data);
         // this.towns[t].ScanRegion(this.NetworkRadius);
+    }
+
+    this.towns_id = AIList();
+    foreach (t in ::TownsIDList) {
         this.towns_id.AddItem(t, 0);
     }
 }
 
+function CityLife::RefreshTownList() {
+    local towns_list = AITownList();
+    towns_list.Valuate(AITown.GetPopulation);
+    towns_list.Sort(AIList.SORT_BY_VALUE, false);
+    towns_list.KeepTop(this.MaxTownNum);
+
+    // get town not in this.towns_id
+    local new_towns = [];
+    foreach (t, _ in towns_list) {
+        if (!this.towns_id.HasItem(t)) {
+            new_towns.append(t);
+
+            local name = AITown.GetName(t);
+            local population = AITown.GetPopulation(t);
+            AILog.Info("New town: " + name + " (" + population + ")");
+        }
+    }
+
+    // get town not in new towns_list
+    local removed_towns = [];
+    foreach (t, _ in this.towns_id) {
+        if (!towns_list.HasItem(t)) {
+            removed_towns.append(t);
+
+            local name = AITown.GetName(t);
+            local population = AITown.GetPopulation(t);
+            AILog.Info("Removed town: " + name + " (" + population + ")");
+        }
+    }
+
+    // store new town data
+    foreach (t in new_towns) {
+        this.towns[t] <- Town(t, this.load_saved_data);
+        this.towns[t].ScanRegion(this.NetworkRadius);
+    }
+
+    // update list
+    this.towns_id = towns_list
+
+    local res = this.towns_id.Next();
+    if (this.towns_id.IsEnd()) {
+        res = this.towns_id.Begin();
+    }
+
+    // for removed town, callback all vehicles and sell them
+    foreach (t in removed_towns) {
+        local name = AITown.GetName(t);
+        AILog.Info("Town: " + name + " sell all vehicles");
+        this.towns[t].ManageVehiclesByCategory(
+            0, 
+            ::Category.MAIL | ::Category.GARBAGE | ::Category.FIRE | ::Category.POLICE | ::Category.AMBULANCE | ::Category.CAR
+            0);
+    }
+
+    // scan every town
+    foreach (t, _ in this.towns) {
+        this.towns[t].ScanRegion(this.NetworkRadius);
+    }
+
+    return res
+}
+
 function CityLife::VerboseTownList()
 {
-    foreach (t, _ in this.towns_id) {
+    foreach (t, _ in this.towns) {
         local name = AITown.GetName(t);
         local population = AITown.GetPopulation(t);
-        AILog.Info("  Service " + name + " (" + population + ")");
+        if (this.towns_id.HasItem(t)) {
+            AILog.Info("  Service " + name + " (" + population + ")");
+        } else {
+            AILog.Info("  Inactive " + name + " (" + population + ")");
+        }
     }
 }
 
 function CityLife::MonthlyManageTowns()
 {
-    foreach (_, town in this.towns)
+    foreach (t, _ in this.towns_id)
     {
-        town.MonthlyManageTown();
+        this.towns[t].MonthlyManageTown();
     }
 }
 
@@ -447,9 +515,11 @@ function CityLife::Save()
      * loaded table. Otherwise we build the table with town data.
      */
     save_table.town_data_table <- {};
+    save_table.towns_id_list <- [];
     if (!this.ai_init_done)
     {
         save_table.town_data_table <- ::TownDataTable;
+        save_table.towns_id_list <- ::TownsIDList;
     }
     else
     {
@@ -458,6 +528,9 @@ function CityLife::Save()
         foreach (town_id, town in this.towns)
         {
             save_table.town_data_table[town_id] <- town.SaveTownData();
+        }
+        foreach (t, _ in this.towns_id) {
+             save_table.towns_id_list.append(t);
         }
         // Also store a savegame version flag
         save_table.save_version <- this.current_save_version;
@@ -475,6 +548,7 @@ function CityLife::Load(version, saved_data)
         {
             ::TownDataTable[townid] <- town_data;
         }
+        ::TownsIDList <- saved_data.towns_id_list;
         this.duplicit_ai = saved_data.duplicit_ai;
         this.road_type = saved_data.road_type;
     }
