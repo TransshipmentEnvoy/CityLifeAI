@@ -238,9 +238,8 @@ function CityLife::Start()
 
             // manage inactive
             foreach (t, _ in this.towns) {
-                if (!this.towns_id.HasItem(t)) {
-                    this.towns[t].UpdateVehicles();
-                }
+                this.towns[t].MonthlyManageTown();
+                this.towns[t].UpdateVehicles();
             }
 
             this.current_year = year

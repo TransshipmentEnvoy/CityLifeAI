@@ -258,13 +258,19 @@ function Town::CalculateVehicleCountDecrease(transported, min_transported, max_t
 
 function Town::UpdateVehicles()
 {
+    local new_list = []
     for (local i = 0; i < this.vehicle_list.len(); ++i)
     {
         if (this.vehicle_list[i].Update())
         {
-            this.vehicle_list.remove(i--);
+            // this.vehicle_list.remove(i--);
+        }
+        else
+        {
+            new_list.append(this.vehicle_list[i]); // not removed
         }
     }
+    this.vehicle_list = new_list;
 }
 
 function Town::RemoveVehicle(vehicle_id)
