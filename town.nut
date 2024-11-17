@@ -124,11 +124,11 @@ function Town::ManageTown(road_type, max_veh)
                 service_count += ceil((population_modified - 1000) / 1000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 10, 90));
             }
             if (population_modified > 5000) {
-                service_count += ceil((population_modified - 4000) / 2000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 20, 80));
+                service_count += ceil((population_modified - 4000) / 4000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 20, 80));
             }
             local emergency_count = 0;
             if (population_modified > 5000) {
-                emergency_count += ceil(fmax(this.population / 6000.0, 1)) * 3;
+                emergency_count += ceil(fmax(this.population / 12000.0, 1)) * 3;
             }
             // AILog.Info("p: " + personal_count)
             // AILog.Info("s: " + service_count)

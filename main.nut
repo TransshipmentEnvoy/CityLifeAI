@@ -236,6 +236,13 @@ function CityLife::Start()
                 this.towns[town_id].Parade(this.towns[target_id]);
             }
 
+            // manage inactive
+            foreach (t, _ in this.towns) {
+                if (!this.towns_id.HasItem(t)) {
+                    this.towns[t].UpdateVehicles();
+                }
+            }
+
             this.current_year = year
         }
 
@@ -430,7 +437,7 @@ function CityLife::RefreshTownList() {
 
     // store new town data
     foreach (t in new_towns) {
-        this.towns[t] <- Town(t, this.load_saved_data);
+        this.towns[t] <- Town(t, false);
         this.towns[t].ScanRegion(this.NetworkRadius);
     }
 
