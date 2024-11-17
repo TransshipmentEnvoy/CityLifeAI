@@ -1,7 +1,7 @@
 2024-10-06
-1. [ ] refer to choochoo for ai architecture
-2. [ ] dynamic town list (use union find set)
-3. [ ] claim this is ai for tech advancement
+1. [x] merge roadbuilder
+2. [x] dynamic town list
+3. [x] claim this is ai for tech advancement
 
 ---
 
