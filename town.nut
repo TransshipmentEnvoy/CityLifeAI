@@ -101,14 +101,35 @@ function Town::ManageTown(road_type, max_veh)
     {
         if (::EngineList.Count() > 0 || vehicle_list.len() > 0)
         {
+            // abolish obsolete vehicles
+            foreach (v in vehicle_list)
+            {
+                if (v.action != Action.SELL && v.category & Category.OBSOLETE)
+                {
+                    v.Sell();
+                }
+            }
+
             // AILog.Info("pop: " + this.population)
             local car_number_modifier = AIController.GetSetting("car_number_modifier") / 100.0;
             local population_modified = this.population * car_number_modifier;
             local max_buy = AIController.GetSetting("max_buy");
 
-            local personal_count = ceil(fmax(population_modified - 1000, 0) / 1000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 0, 80));
-            local service_count = ceil(fmax(this.population - 2000, 0) / 5000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 10, 60));
-            local emergency_count = ceil(fmax(this.population - 10000, 0) / 20000.0) * 3;
+            local personal_count = 0;
+            if (population_modified > 1000) {
+                personal_count = ceil(population_modified / 1000.0 * this.CalculateVehicleCountDecrease(this.pax_transported, 0, 100));
+            }
+            local service_count = 0;
+            if (population_modified > 2000) {
+                service_count += ceil((population_modified - 1000) / 1000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 10, 90));
+            }
+            if (population_modified > 5000) {
+                service_count += ceil((population_modified - 4000) / 2000.0 * this.CalculateVehicleCountDecrease(this.mail_transported, 20, 80));
+            }
+            local emergency_count = 0;
+            if (population_modified > 5000) {
+                emergency_count += ceil(fmax(this.population / 6000.0, 1)) * 3;
+            }
             // AILog.Info("p: " + personal_count)
             // AILog.Info("s: " + service_count)
             // AILog.Info("e: " + emergency_count)
@@ -126,7 +147,7 @@ function Town::ManageTown(road_type, max_veh)
             if (GetEngineListByCategory(Category.FIRE | Category.POLICE | Category.AMBULANCE).Count() > 0)
             {
                 emergency_count = emergency_count > max_veh ? max_veh : emergency_count;
-                max_buy -= this.ManageVehiclesByCategory(emergency_count, Category.FIRE | Category.POLICE | Category.AMBULANCE);
+                max_buy -= this.ManageVehiclesByCategory(emergency_count, Category.FIRE | Category.POLICE | Category.AMBULANCE, max_buy);
             }
             else
             {
@@ -146,7 +167,7 @@ function Town::ManageTown(road_type, max_veh)
 function Town::MonthlyManageTown()
 {
     local population = AITown.GetPopulation(this.id);
-    this.population = population > 500000 ? 500000 : population;
+    this.population = population > 200000 ? 200000 : population;
     this.pax_transported = AITown.GetLastMonthTransportedPercentage(this.id, 0x00);
 	this.mail_transported = AITown.GetLastMonthTransportedPercentage(this.id, 0x02);
 
@@ -156,6 +177,13 @@ function Town::MonthlyManageTown()
     // local emergency_count = ceil((this.population - 1000) / 2000.0) * 3;
     // AILog.Info(AITown.GetName(this.id) + ": Population = " + this.population + ", Pax transported = " + this.pax_transported + " Mail transported = " + this.mail_transported);
     // AILog.Info("Personal = " + personal_count + ", Services = " + service_count + ", Emergency = " + emergency_count);
+
+    // update category
+    if (this.vehicle_list != null) {
+        foreach (v in this.vehicle_list) {
+            v.category = ::EngineList.GetValue(AIVehicle.GetEngineType(v.id));
+        }
+    }
 }
 
 function Town::ManageVehiclesByCategory(target_count, category, max_buy)
@@ -179,7 +207,7 @@ function Town::ManageVehiclesByCategory(target_count, category, max_buy)
 
         AILog.Info(AITown.GetName(this.id) + ": Buying " + ((target_count - vehicle_count) > max_buy ? max_buy : (target_count - vehicle_count)) + " vehicles of type " + category);
 
-        local engine_list = GetEngineListByCategory(category)
+        local engine_list = GetEngineListByCategory(category, Category.OBSOLETE);
 
         // Randomize start of the vehicle list
         local engine = engine_list.Begin();
@@ -251,6 +279,28 @@ function Town::RemoveVehicle(vehicle_id)
     }
 
     return false;
+}
+
+function Town::ParadeFind(towns_id)
+{
+    local connected_town_list = AIList();
+    foreach (t, st in this.connection_status) {
+        if (st && towns_id.HasItem(t)) {
+            connected_town_list.AddItem(t, 0);
+        }
+    }
+
+    // if connected_town_list len is zero, return null
+    if (connected_town_list.Count() == 0)
+        return null;
+    
+    // randomly pick a town
+    connected_town_list.Valuate(AIBase.RandItem);
+    connected_town_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+    local town_b = connected_town_list.Begin();
+    if (town_b == this.id)
+        return null;
+    return town_b;
 }
 
 function Town::Parade(town_b)

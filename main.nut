@@ -228,11 +228,19 @@ function CityLife::Start()
                 this.road_type = road_type;
                 AIRoad.SetCurrentRoadType(this.road_type);
             }
+
+            // yearly parade
+            local target_id = this.towns[town_id].ParadeFind(this.towns_id);
+            if (target_id != null) {
+                AILog.Info("Parade: " + AITown.GetName(town_id) + " => " + AITown.GetName(target_id));
+                this.towns[town_id].Parade(this.towns[target_id]);
+            }
+
             this.current_year = year
         }
 
         // Run the per-decade functions
-        if (year - this.current_decade_year >= 1)
+        if (year - this.current_decade_year >= 10)
         {
             AILog.Info("Decade Update");
 
@@ -319,14 +327,15 @@ function CityLife::AskForMoney()
     local max_loan_amount = AICompany.GetMaxLoanAmount();
     // AILog.Info("max_loan_amount: " + max_loan_amount);
     // AILog.Info("bank balance: " + bank_balance);
-    max_loan_amount = max_loan_amount > 500000 ? max_loan_amount : 500000;
+    max_loan_amount = max_loan_amount >  500000 ? max_loan_amount :  500000;
+    max_loan_amount = max_loan_amount < 2000000 ? max_loan_amount : 2000000;
     if (loan_amount > 0 && bank_balance >= loan_amount)
     {
         AICompany.SetLoanAmount(0);
         bank_balance -= loan_amount;
     }
 
-    // AILog.Info("max loan amount: " + max_loan_amount);
+    AILog.Info("max loan amount: " + max_loan_amount);
     AILog.Info("bank balance: " + bank_balance);
 
     if (bank_balance < max_loan_amount)
@@ -369,6 +378,8 @@ function CityLife::CreateTownList()
 
     this.towns = towns_array;
 
+    towns_list.Valuate(AIBase.RandItem);
+    towns_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
     towns_list.Valuate(function(_){return 0;});
     this.towns_id = towns_list;
 }
@@ -424,6 +435,9 @@ function CityLife::RefreshTownList() {
     }
 
     // update list
+    towns_list.Valuate(AIBase.RandItem);
+    towns_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+    towns_list.Valuate(function(_){return 0;});
     this.towns_id = towns_list
 
     local res = this.towns_id.Next();
