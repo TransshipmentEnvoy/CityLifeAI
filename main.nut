@@ -334,7 +334,7 @@ function CityLife::AskForMoney()
     // AILog.Info("max_loan_amount: " + max_loan_amount);
     // AILog.Info("bank balance: " + bank_balance);
     max_loan_amount = max_loan_amount >  500000 ? max_loan_amount :  500000;
-    max_loan_amount = max_loan_amount < 2000000 ? max_loan_amount : 2000000;
+    max_loan_amount = max_loan_amount < 5000000 ? max_loan_amount : 5000000;
     if (loan_amount > 0 && bank_balance >= loan_amount)
     {
         AICompany.SetLoanAmount(0);
