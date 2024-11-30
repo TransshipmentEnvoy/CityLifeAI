@@ -67,6 +67,9 @@ function RefreshEngineList()
 
     engine_list.Valuate(AIEngine.GetRunningCost);
     engine_list.KeepValue(0);
+    // remove those has cargo capacity
+    engine_list.Valuate(AIEngine.GetCapacity);
+    engine_list.KeepBelowValue(0);
 
     foreach (engine, index in engine_list)
     {
